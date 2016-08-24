@@ -262,7 +262,11 @@ defaultSplitter toMsg draggable orientation =
                     , ( "margin", "0 -5px" )
                     , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
                     , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
-                    ] ++ if draggable then [ ( "cursor", "col-resize" ) ] else []
+                    ]
+                        ++ if draggable then
+                            [ ( "cursor", "col-resize" ) ]
+                           else
+                            []
 
             Vertical ->
                 createSpanWith <|
@@ -271,7 +275,11 @@ defaultSplitter toMsg draggable orientation =
                     , ( "margin", "-5px 0" )
                     , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
                     , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
-                    ] ++ if draggable then [ ( "cursor", "row-resize" ) ] else []
+                    ]
+                        ++ if draggable then
+                            [ ( "cursor", "row-resize" ) ]
+                           else
+                            []
 
 
 {-| Default pane with two views
