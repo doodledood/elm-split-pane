@@ -3,7 +3,15 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..), draggable, startAt)
+import SplitPane
+    exposing
+        ( Orientation(..)
+        , draggable
+        , startAt
+        , withFirstViewMinSize
+        , withSecondViewMinSize
+        , Size(..)
+        )
 
 
 main : Program Never
@@ -43,6 +51,8 @@ init =
             , paneHeight = 600
             , orientation = Vertical
             }
+            |> withFirstViewMinSize (Percentage 0.33)
+            |> withSecondViewMinSize (Px 200)
     }
         ! []
 
