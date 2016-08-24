@@ -1,4 +1,20 @@
-module SplitPane exposing (view, Model, Msg, Orientation(..), Px, splitterPosition, subscriptions, update, init, startAt, draggable)
+module SplitPane
+    exposing
+        ( view
+        , Model
+        , Msg
+        , Orientation(..)
+        , Px
+        , Size(..)
+        , splitterPosition
+        , withFirstViewMinSize
+        , withSecondViewMinSize
+        , subscriptions
+        , update
+        , init
+        , startAt
+        , draggable
+        )
 
 {-|
 
@@ -8,10 +24,10 @@ Lel
 @docs view
 
 # Model
-@docs Model, Msg, Orientation, Px, splitterPosition
+@docs Model, Msg, Orientation, Px, Size, splitterPosition
 
 # Init
-@docs init, startAt, draggable
+@docs init, startAt, draggable, withFirstViewMinSize, withSecondViewMinSize
 
 # Update
 @docs update
@@ -30,6 +46,13 @@ import Maybe
 
 
 -- MODEL
+
+
+{-| Size in either pixels or percentage.
+-}
+type Size
+    = Px Int
+    | Percentage Float
 
 
 {-| Px in pixels.
@@ -51,6 +74,8 @@ type Model
     = Model
         { splitterPosition : Px
         , draggable : Bool
+        , firstViewMinSize : Size
+        , secondViewMinSize : Size
         , paneWidth : Px
         , paneHeight : Px
         , dragPosition : Maybe Mouse.Position
@@ -73,9 +98,19 @@ splitterPosition (Model model) =
     model.splitterPosition
 
 
-toCss : Px -> String
-toCss px =
+pxToCss : Px -> String
+pxToCss px =
     toString px ++ "px"
+
+
+sizeToCss : Size -> String
+sizeToCss size =
+    case size of
+        Px n ->
+            pxToCss n
+
+        Percentage p ->
+            toString (p * 100) ++ "%"
 
 
 
@@ -110,6 +145,8 @@ init { paneWidth, paneHeight, orientation } =
         Model
             { splitterPosition = startingSplitterPosition
             , draggable = True
+            , firstViewMinSize = Px 0
+            , secondViewMinSize = Px 0
             , paneWidth = paneWidth
             , paneHeight = paneHeight
             , dragPosition = Nothing
@@ -147,6 +184,24 @@ draggable isDraggable (Model model) =
     Model { model | draggable = isDraggable }
 
 
+{-| Set minimum size for the first view.
+    When the pane is horizontal, this is the left view.
+    When the pane is vertical, this is the top view.
+-}
+withFirstViewMinSize : Size -> Model -> Model
+withFirstViewMinSize size (Model model) =
+    Model { model | firstViewMinSize = size }
+
+
+{-| Set minimum size for the second view.
+    When the pane is horizontal, this is the right view.
+    When the pane is vertical, this is the bottom view.
+-}
+withSecondViewMinSize : Size -> Model -> Model
+withSecondViewMinSize size (Model model) =
+    Model { model | secondViewMinSize = size }
+
+
 
 -- UPDATE
 
@@ -175,12 +230,14 @@ update msg (Model model) =
 
 
 resize :
-    { splitterPosition : Px
-    , dragPosition : Maybe Mouse.Position
-    , orientation : Orientation
+    { dragPosition : Maybe Mouse.Position
     , draggable : Bool
+    , firstViewMinSize : Size
     , paneHeight : Px
     , paneWidth : Px
+    , secondViewMinSize : Size
+    , splitterPosition : Px
+    , orientation : Orientation
     }
     -> Mouse.Position
     -> ({ x : Int, y : Int } -> Int)
@@ -216,16 +273,52 @@ isInLimits :
         | orientation : Orientation
         , paneHeight : Px
         , paneWidth : Px
+        , firstViewMinSize : Size
+        , secondViewMinSize : Size
     }
     -> Px
     -> Bool
 isInLimits model newSplitterPosition =
     case model.orientation of
         Horizontal ->
-            newSplitterPosition >= 0 && newSplitterPosition <= model.paneWidth
+            let
+                minPx =
+                    case model.firstViewMinSize of
+                        Px n ->
+                            n
+
+                        Percentage p ->
+                            round <| toFloat model.paneWidth * p
+
+                maxPx =
+                    case model.secondViewMinSize of
+                        Px n ->
+                            model.paneWidth - n
+
+                        Percentage p ->
+                            model.paneWidth - (round <| toFloat model.paneWidth * p)
+            in
+                newSplitterPosition >= minPx && newSplitterPosition <= maxPx
 
         Vertical ->
-            newSplitterPosition >= 0 && newSplitterPosition <= model.paneHeight
+            let
+                minPx =
+                    case model.firstViewMinSize of
+                        Px n ->
+                            n
+
+                        Percentage p ->
+                            round <| toFloat model.paneHeight * p
+
+                maxPx =
+                    case model.secondViewMinSize of
+                        Px n ->
+                            model.paneHeight - n
+
+                        Percentage p ->
+                            model.paneHeight - (round <| toFloat model.paneHeight * p)
+            in
+                newSplitterPosition >= minPx && newSplitterPosition <= maxPx
 
 
 
@@ -307,14 +400,15 @@ view toMsg (Model model) firstView secondView =
                     , ( "display", "flex" )
                     , ( "flex", "1 1 0%" )
                     , ( "flexDirection", "row" )
-                    , ( "width", toCss model.paneWidth )
-                    , ( "height", toCss model.paneHeight )
+                    , ( "width", pxToCss model.paneWidth )
+                    , ( "height", pxToCss model.paneHeight )
                     , ( "boxSizing", "border-box" )
                     ]
                 ]
                 [ div
                     [ style
-                        [ ( "width", toCss model.splitterPosition )
+                        [ ( "width", pxToCss model.splitterPosition )
+                        , ( "minWidth", sizeToCss model.firstViewMinSize )
                         , ( "overflow", "hidden" )
                         , ( "boxSizing", "border-box" )
                         , ( "position", "relative" )
@@ -324,7 +418,8 @@ view toMsg (Model model) firstView secondView =
                 , defaultSplitter toMsg model.draggable model.orientation
                 , div
                     [ style
-                        [ ( "width", toCss <| model.paneWidth - model.splitterPosition )
+                        [ ( "width", pxToCss <| model.paneWidth - model.splitterPosition )
+                        , ( "minWidth", sizeToCss model.secondViewMinSize )
                         , ( "overflow", "hidden" )
                         , ( "boxSizing", "border-box" )
                         , ( "position", "relative" )
@@ -340,14 +435,15 @@ view toMsg (Model model) firstView secondView =
                     , ( "display", "flex" )
                     , ( "flex", "1 1 0%" )
                     , ( "flexDirection", "column" )
-                    , ( "width", toCss model.paneWidth )
-                    , ( "height", toCss model.paneHeight )
+                    , ( "width", pxToCss model.paneWidth )
+                    , ( "height", pxToCss model.paneHeight )
                     , ( "boxSizing", "border-box" )
                     ]
                 ]
                 [ div
                     [ style
-                        [ ( "height", toCss model.splitterPosition )
+                        [ ( "height", pxToCss model.splitterPosition )
+                        , ( "minHeight", sizeToCss model.firstViewMinSize )
                         , ( "overflow", "hidden" )
                         , ( "boxSizing", "border-box" )
                         , ( "position", "relative" )
@@ -357,7 +453,8 @@ view toMsg (Model model) firstView secondView =
                 , defaultSplitter toMsg model.draggable model.orientation
                 , div
                     [ style
-                        [ ( "height", toCss <| model.paneHeight - model.splitterPosition )
+                        [ ( "height", pxToCss <| model.paneHeight - model.splitterPosition )
+                        , ( "minHeight", sizeToCss model.secondViewMinSize )
                         , ( "overflow", "hidden" )
                         , ( "boxSizing", "border-box" )
                         , ( "position", "relative" )
