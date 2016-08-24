@@ -85,8 +85,7 @@ toCss size =
 {-| Initialize a new model.
 
         init
-            { splitterPosition = 200
-            , paneWidth = 600
+            { paneWidth = 600
             , paneHeight = 600
             , orientation = Horizontal
             }
