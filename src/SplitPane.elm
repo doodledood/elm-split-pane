@@ -1,4 +1,4 @@
-module SplitPane exposing (view, Model, Msg, Orientation(..), Size, splitterPosition, subscriptions, update, init, startAt, draggable)
+module SplitPane exposing (view, Model, Msg, Orientation(..), Px, splitterPosition, subscriptions, update, init, startAt, draggable)
 
 {-|
 
@@ -8,7 +8,7 @@ Lel
 @docs view
 
 # Model
-@docs Model, Msg, Orientation, Size, splitterPosition
+@docs Model, Msg, Orientation, Px, splitterPosition
 
 # Init
 @docs init, startAt, draggable
@@ -32,9 +32,9 @@ import Maybe
 -- MODEL
 
 
-{-| Size in pixels.
+{-| Px in pixels.
 -}
-type alias Size =
+type alias Px =
     Int
 
 
@@ -49,10 +49,10 @@ type Orientation
 -}
 type Model
     = Model
-        { splitterPosition : Size
+        { splitterPosition : Px
         , draggable : Bool
-        , paneWidth : Size
-        , paneHeight : Size
+        , paneWidth : Px
+        , paneHeight : Px
         , dragPosition : Maybe Mouse.Position
         , orientation : Orientation
         }
@@ -66,16 +66,16 @@ type Msg
     | ResizeEnded Mouse.Position
 
 
-{-| Retrieves current size from the model.
+{-| Retrieves current Px from the model.
 -}
-splitterPosition : Model -> Size
+splitterPosition : Model -> Px
 splitterPosition (Model model) =
     model.splitterPosition
 
 
-toCss : Size -> String
-toCss size =
-    toString size ++ "px"
+toCss : Px -> String
+toCss px =
+    toString px ++ "px"
 
 
 
@@ -93,13 +93,13 @@ toCss size =
 init :
     { a
         | orientation : Orientation
-        , paneHeight : Size
-        , paneWidth : Size
+        , paneHeight : Px
+        , paneWidth : Px
     }
     -> Model
 init { paneWidth, paneHeight, orientation } =
     let
-        startingSize =
+        startingSplitterPosition =
             case orientation of
                 Horizontal ->
                     paneWidth // 2
@@ -108,7 +108,7 @@ init { paneWidth, paneHeight, orientation } =
                     paneHeight // 2
     in
         Model
-            { splitterPosition = startingSize
+            { splitterPosition = startingSplitterPosition
             , draggable = True
             , paneWidth = paneWidth
             , paneHeight = paneHeight
@@ -127,7 +127,7 @@ init { paneWidth, paneHeight, orientation } =
                 }
                 |> startAt 300
 -}
-startAt : Size -> Model -> Model
+startAt : Px -> Model -> Model
 startAt startingSplitterPosition (Model model) =
     Model { model | splitterPosition = startingSplitterPosition }
 
@@ -175,12 +175,12 @@ update msg (Model model) =
 
 
 resize :
-    { splitterPosition : Size
+    { splitterPosition : Px
     , dragPosition : Maybe Mouse.Position
     , orientation : Orientation
     , draggable : Bool
-    , paneHeight : Size
-    , paneWidth : Size
+    , paneHeight : Px
+    , paneWidth : Px
     }
     -> Mouse.Position
     -> ({ x : Int, y : Int } -> Int)
@@ -198,13 +198,13 @@ resize model newDragPosition diffProp =
                 diff =
                     calculateDiff newDragPosition prev
 
-                newSize =
+                newSplitterPosition =
                     model.splitterPosition + diff
             in
-                if isInLimits model newSize then
+                if isInLimits model newSplitterPosition then
                     Model
                         { model
-                            | splitterPosition = newSize
+                            | splitterPosition = newSplitterPosition
                             , dragPosition = Just newDragPosition
                         }
                 else
@@ -214,18 +214,18 @@ resize model newDragPosition diffProp =
 isInLimits :
     { a
         | orientation : Orientation
-        , paneHeight : Size
-        , paneWidth : Size
+        , paneHeight : Px
+        , paneWidth : Px
     }
-    -> Size
+    -> Px
     -> Bool
-isInLimits model newSize =
+isInLimits model newSplitterPosition =
     case model.orientation of
         Horizontal ->
-            newSize >= 0 && newSize <= model.paneWidth
+            newSplitterPosition >= 0 && newSplitterPosition <= model.paneWidth
 
         Vertical ->
-            newSize >= 0 && newSize <= model.paneHeight
+            newSplitterPosition >= 0 && newSplitterPosition <= model.paneHeight
 
 
 
