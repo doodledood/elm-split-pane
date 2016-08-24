@@ -279,46 +279,49 @@ isInLimits :
     -> Px
     -> Bool
 isInLimits model newSplitterPosition =
-    case model.orientation of
-        Horizontal ->
-            let
-                minPx =
-                    case model.firstViewMinSize of
-                        Px n ->
-                            n
+    let
+        ( minPx, maxPx ) =
+            calculateMinAndMaxPositionsForSplitter model
+    in
+        newSplitterPosition >= minPx && newSplitterPosition <= maxPx
 
-                        Percentage p ->
-                            round <| toFloat model.paneWidth * p
 
-                maxPx =
-                    case model.secondViewMinSize of
-                        Px n ->
-                            model.paneWidth - n
+calculateMinAndMaxPositionsForSplitter :
+    { a
+        | firstViewMinSize : Size
+        , orientation : Orientation
+        , paneHeight : Px
+        , paneWidth : Px
+        , secondViewMinSize : Size
+    }
+    -> ( Int, Int )
+calculateMinAndMaxPositionsForSplitter model =
+    let
+        totalLength =
+            case model.orientation of
+                Horizontal ->
+                    model.paneWidth
 
-                        Percentage p ->
-                            model.paneWidth - (round <| toFloat model.paneWidth * p)
-            in
-                newSplitterPosition >= minPx && newSplitterPosition <= maxPx
+                Vertical ->
+                    model.paneHeight
 
-        Vertical ->
-            let
-                minPx =
-                    case model.firstViewMinSize of
-                        Px n ->
-                            n
+        minPx =
+            case model.firstViewMinSize of
+                Px n ->
+                    n
 
-                        Percentage p ->
-                            round <| toFloat model.paneHeight * p
+                Percentage p ->
+                    round <| toFloat totalLength * p
 
-                maxPx =
-                    case model.secondViewMinSize of
-                        Px n ->
-                            model.paneHeight - n
+        maxPx =
+            case model.secondViewMinSize of
+                Px n ->
+                    totalLength - n
 
-                        Percentage p ->
-                            model.paneHeight - (round <| toFloat model.paneHeight * p)
-            in
-                newSplitterPosition >= minPx && newSplitterPosition <= maxPx
+                Percentage p ->
+                    totalLength - (round <| toFloat totalLength * p)
+    in
+        ( minPx, maxPx )
 
 
 
