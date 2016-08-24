@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..), Size, startAt)
+import SplitPane exposing (Orientation(..), startAt)
 
 
 main : Program Never
