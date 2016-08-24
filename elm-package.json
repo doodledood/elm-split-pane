@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "Split pane for elm.",
-    "repository": "https://github.com/doodledood/elm-split-pane",
+    "repository": "https://github.com/doodledood/elm-split-pane.git",
     "license": "MIT",
     "source-directories": [
         "src"
