@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..), startAt)
+import SplitPane
 
 
 main : Program Never
@@ -21,9 +21,7 @@ init =
     ( SplitPane.init
         { paneWidth = 800
         , paneHeight = 600
-        , orientation = Horizontal
         }
-        |> startAt 200
     , Cmd.none
     )
 

@@ -10,6 +10,7 @@ import SplitPane
         , startAt
         , withFirstViewMinSize
         , withSecondViewMinSize
+        , orientation
         , Size(..)
         )
 
@@ -41,17 +42,17 @@ init =
         SplitPane.init
             { paneWidth = 800
             , paneHeight = 600
-            , orientation = Horizontal
             }
             |> draggable False
-            |> startAt 200
+            |> startAt (Percentage 0.2)
     , inner =
         SplitPane.init
             { paneWidth = 600
             , paneHeight = 600
-            , orientation = Vertical
             }
-            |> withFirstViewMinSize (Percentage 0.33)
+            |> orientation Vertical
+            |> startAt (Px 400)
+            |> withFirstViewMinSize (Percentage 0.2)
             |> withSecondViewMinSize (Px 200)
     }
         ! []
