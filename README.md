@@ -59,6 +59,11 @@ secondView =
 ```
 
 
-## Usage Examples
+## Examples
 
-[See examples for more complicated uses](https://github.com/doodledood/elm-split-pane/tree/master/examples)
+1. [Simple](https://doodledood.github.io/elm-split-pane/simple.html)
+2. [Nested](https://doodledood.github.io/elm-split-pane/nested.html)
+3. [Custom splitter](https://doodledood.github.io/elm-split-pane/customSplitter.html)
+4. [Adjusting to resizes](https://doodledood.github.io/elm-split-pane/adjustToResize.html)
+
+[Examples code](https://github.com/doodledood/elm-1split-pane/tree/master/examples)
