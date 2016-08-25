@@ -10,7 +10,7 @@ import SplitPane
         , startAt
         , withFirstViewMinSize
         , withSecondViewMinSize
-        , orientation
+        , changeOrientationTo
         , Size(..)
         )
 
@@ -50,7 +50,7 @@ init =
             { paneWidth = 600
             , paneHeight = 600
             }
-            |> orientation Vertical
+            |> changeOrientationTo Vertical
             |> startAt (Px 400)
             |> withFirstViewMinSize (Percentage 0.2)
             |> withSecondViewMinSize (Px 200)
