@@ -66,4 +66,4 @@ secondView =
 3. [Custom splitter](https://doodledood.github.io/elm-split-pane/customSplitter.html)
 4. [Adjusting to resizes](https://doodledood.github.io/elm-split-pane/adjustToResize.html)
 
-[Examples code](https://github.com/doodledood/elm-1split-pane/tree/master/examples)
+[Examples code](https://github.com/doodledood/elm-split-pane/tree/master/examples)
