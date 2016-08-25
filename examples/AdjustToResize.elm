@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Html exposing (..)
+import Html.Attributes exposing (style)
 import Html.App exposing (program)
 import SplitPane exposing (Px, splitterPosition)
 
@@ -10,9 +11,15 @@ main =
     program
         { update = update
         , init = init
-        , subscriptions = SplitPane.subscriptions
+        , subscriptions = subscriptions
         , view = view
         }
+
+
+subscriptions : SplitPane.Model -> Sub SplitPane.Msg
+subscriptions =
+    SplitPane.subscriptions
+
 
 init : ( SplitPane.Model, Cmd a )
 init =
@@ -31,23 +38,45 @@ update msg model =
 
 view : SplitPane.Model -> Html SplitPane.Msg
 view model =
-    let (firstView, secondView) = chooseViewsBasedOnSplitterPosition <| splitterPosition model
-    in SplitPane.view identity firstView secondView model
+    let
+        ( firstView, secondView ) =
+            chooseViewsBasedOnSplitterPosition <| splitterPosition model
+    in
+        SplitPane.view identity firstView secondView model
 
-chooseViewsBasedOnSplitterPosition : Px -> ( Html a, Html b )
+
+chooseViewsBasedOnSplitterPosition : Px -> ( Html a, Html a )
 chooseViewsBasedOnSplitterPosition splitterPosition =
-    if splitterPosition < 200 then (smallView, largeView)
-    else if splitterPosition < 600 then (mediumView, mediumView)
-    else (largeView, smallView)
+    if splitterPosition < 200 then
+        ( smallView, largeView )
+    else if splitterPosition < 600 then
+        ( mediumView, mediumView )
+    else
+        ( largeView, smallView )
+
 
 smallView : Html a
 smallView =
-    text "small"
+    div
+        [ style
+            [ ( "background", "lightblue" ) ]
+        ]
+        [ text "small" ]
+
 
 mediumView : Html a
 mediumView =
-    text "medium"
+    div
+        [ style
+            [ ( "background", "lightgreen" ) ]
+        ]
+        [ text "medium" ]
+
 
 largeView : Html a
 largeView =
-    text "large"
+    div
+        [ style
+            [ ( "background", "lightcoral" ) ]
+        ]
+        [ text "large" ]
