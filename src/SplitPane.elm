@@ -36,11 +36,11 @@ Check out the [examples][] to see how it works.
 
 # View
 
-@docs view, viewWithCustomSplitter, HtmlDetails, customSplitter
+@docs view
 
 # Model
 
-@docs Model, Msg, Orientation, Px, Size, splitterPosition, width, height, orientation
+@docs Model, Orientation, Px, Size
 
 # Init
 
@@ -48,17 +48,32 @@ Check out the [examples][] to see how it works.
 
 # Update
 
-@docs update
-
-# Helper functions
-
-Use these functions to update the state of the pane
-
-@docs startAt, draggable, withFirstViewMinSize, withSecondViewMinSize, changeOrientationTo, changeWidth, changeHeight, moveSplitterTo
+@docs update, Msg
 
 # Subscriptions
 
 @docs subscriptions
+
+# Helpers
+There are helper functions to help you with modifying and inspecting the state:
+
+## State modification
+
+Use these functions to modify the state of the pane
+
+@docs startAt, draggable, withFirstViewMinSize, withSecondViewMinSize, changeOrientationTo, changeWidth, changeHeight, moveSplitterTo
+
+## Inspecting the pane's state
+
+Use these functions to inspect the state
+
+@docs splitterPosition, width, height, orientation
+
+# Customization
+
+Apart for the simple view, there is a way to provide your own custom splitter:
+
+@docs viewWithCustomSplitter, customSplitter, HtmlDetails
 
 -}
 
@@ -80,7 +95,7 @@ type Size
     | Percentage Float
 
 
-{-| Px in pixels.
+{-| Size in pixels.
 -}
 type alias Px =
     Int
@@ -161,9 +176,36 @@ init { paneWidth, paneHeight } =
         }
 
 
+-- HELPERS - GETTERS
 
--- HELPERS
+{-| Retrieves current splitter position in pixels from the model (relative to the edge of the pane).
+-}
+splitterPosition : Model -> Px
+splitterPosition (Model model) =
+    model.splitterPosition
 
+
+{-| Retrieves current width of the pane from the model.
+-}
+width : Model -> Px
+width (Model model) =
+    model.paneWidth
+
+
+{-| Retrieves current height of the pane from the model.
+-}
+height : Model -> Px
+height (Model model) =
+    model.paneHeight
+
+
+{-| Retrieves current orientation of the pane from the model.
+-}
+orientation : Model -> Orientation
+orientation (Model model) =
+    model.orientation
+
+-- HELPERS - MODIFICATIONS
 
 {-| Sets the starting position for the splitter.
 
@@ -171,7 +213,6 @@ init { paneWidth, paneHeight } =
             SplitPane.init
                 { paneWidth = 800
                 , paneHeight = 600
-                , orientation = Horizontal
                 }
                 |> startAt 300
 -}
@@ -203,36 +244,14 @@ capSplitterPosition splitterPosition model =
     in
         cappedPosition
 
-
-{-| Retrieves current splitter position in pixels from the model (relative to the edge of the pane).
--}
-splitterPosition : Model -> Px
-splitterPosition (Model model) =
-    model.splitterPosition
-
-
-{-| Retrieves current width of the pane from the model.
--}
-width : Model -> Px
-width (Model model) =
-    model.paneWidth
-
-
-{-| Retrieves current height of the pane from the model.
--}
-height : Model -> Px
-height (Model model) =
-    model.paneHeight
-
-
-{-| Retrieves current orientation of the pane from the model.
--}
-orientation : Model -> Orientation
-orientation (Model model) =
-    model.orientation
-
-
 {-| Moves the splitter to the requested location relative to the edge of the pane
+
+        init =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+                |> moveSplitterTo (Percentage 0.33)
 -}
 moveSplitterTo : Size -> Model -> Model
 moveSplitterTo size (Model model) =
@@ -260,6 +279,13 @@ draggable isDraggable (Model model) =
 {-| Set minimum size for the first view.
     When the pane is horizontal, this is the left view.
     When the pane is vertical, this is the top view.
+
+        init =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+                |> withFirstViewMinSize (Percentage 0.2)
 -}
 withFirstViewMinSize : Size -> Model -> Model
 withFirstViewMinSize size (Model model) =
@@ -269,6 +295,13 @@ withFirstViewMinSize size (Model model) =
 {-| Set minimum size for the second view.
     When the pane is horizontal, this is the right view.
     When the pane is vertical, this is the bottom view.
+
+        init =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+                |> withSecondViewMinSize (Px 100)
 -}
 withSecondViewMinSize : Size -> Model -> Model
 withSecondViewMinSize size (Model model) =
@@ -276,6 +309,13 @@ withSecondViewMinSize size (Model model) =
 
 
 {-| Set the orientation of the pane.
+
+        init =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+                |> changeOrientationTo Vertical
 -}
 changeOrientationTo : Orientation -> Model -> Model
 changeOrientationTo o (Model model) =
@@ -283,6 +323,8 @@ changeOrientationTo o (Model model) =
 
 
 {-| Change the width of the pane.
+
+        newModel = model.pane |> changeWidth 600
 -}
 changeWidth : Px -> Model -> Model
 changeWidth px (Model model) =
@@ -290,6 +332,8 @@ changeWidth px (Model model) =
 
 
 {-| Change the height of the pane.
+
+        newModel = model.pane |> changeHeight 400
 -}
 changeHeight : Px -> Model -> Model
 changeHeight px (Model model) =
@@ -502,6 +546,8 @@ defaultSplitterDetails (Model model) =
                 }
 
 {-| Creates a custom splitter.
+
+    See implementation of 'defaultSplitterDetails' for an example
 -}
 customSplitter
     : (Msg -> msg)
@@ -517,7 +563,7 @@ customSplitter toMsg details =
 
         view : SplitPane.Model -> Html SplitPane.Msg
         view model =
-            SplitPane.view identity model firstView secondView
+            SplitPane.view identity firstView secondView model
 
 
         firstView : Html a
@@ -539,7 +585,7 @@ view toMsg firstView secondView model =
 
         view : SplitPane.Model -> Html SplitPane.Msg
         view model =
-            SplitPane.viewWithCustomSplitter myCustomSplitter identity model firstView secondView
+            SplitPane.viewWithCustomSplitter myCustomSplitter identity firstView secondView model
 
         myCustomSplitter : Html msg
         myCustomSplitter toMsg _ _ =
