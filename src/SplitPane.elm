@@ -14,6 +14,9 @@ module SplitPane
         , init
         , startAt
         , draggable
+        , orientation
+        , changeWidth
+        , changeHeight
         )
 
 {-|
@@ -27,7 +30,7 @@ Lel
 @docs Model, Msg, Orientation, Px, Size, splitterPosition
 
 # Init
-@docs init, startAt, draggable, withFirstViewMinSize, withSecondViewMinSize
+@docs init, startAt, draggable, withFirstViewMinSize, withSecondViewMinSize, orientation, changeWidth, changeHeight
 
 # Update
 @docs update
@@ -37,8 +40,8 @@ Lel
 
 -}
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, span, div, Attribute)
+import Html.Attributes exposing (style)
 import Html.Events exposing (on)
 import Mouse
 import Json.Decode as Json
@@ -91,13 +94,6 @@ type Msg
     | ResizeEnded Mouse.Position
 
 
-{-| Retrieves current Px from the model.
--}
-splitterPosition : Model -> Px
-splitterPosition (Model model) =
-    model.splitterPosition
-
-
 pxToCss : Px -> String
 pxToCss px =
     toString px ++ "px"
@@ -122,36 +118,29 @@ sizeToCss size =
         init
             { paneWidth = 600
             , paneHeight = 600
-            , orientation = Horizontal
             }
 -}
 init :
     { a
-        | orientation : Orientation
-        , paneHeight : Px
+        | paneHeight : Px
         , paneWidth : Px
     }
     -> Model
-init { paneWidth, paneHeight, orientation } =
-    let
-        startingSplitterPosition =
-            case orientation of
-                Horizontal ->
-                    paneWidth // 2
+init { paneWidth, paneHeight } =
+    Model
+        { splitterPosition = paneWidth // 2
+        , draggable = True
+        , firstViewMinSize = Px 0
+        , secondViewMinSize = Px 0
+        , paneWidth = paneWidth
+        , paneHeight = paneHeight
+        , dragPosition = Nothing
+        , orientation = Horizontal
+        }
 
-                Vertical ->
-                    paneHeight // 2
-    in
-        Model
-            { splitterPosition = startingSplitterPosition
-            , draggable = True
-            , firstViewMinSize = Px 0
-            , secondViewMinSize = Px 0
-            , paneWidth = paneWidth
-            , paneHeight = paneHeight
-            , dragPosition = Nothing
-            , orientation = orientation
-            }
+
+
+-- HELPERS
 
 
 {-| Sets the starting position for the splitter.
@@ -164,9 +153,28 @@ init { paneWidth, paneHeight, orientation } =
                 }
                 |> startAt 300
 -}
-startAt : Px -> Model -> Model
+startAt : Size -> Model -> Model
 startAt startingSplitterPosition (Model model) =
-    Model { model | splitterPosition = startingSplitterPosition }
+    let
+        pxSize =
+            sizeToPx model startingSplitterPosition
+
+        cappedPosition =
+            case model.orientation of
+                Horizontal ->
+                    min (max pxSize 0) model.paneWidth
+
+                Vertical ->
+                    min (max pxSize 0) model.paneHeight
+    in
+        Model { model | splitterPosition = cappedPosition }
+
+
+{-| Retrieves current Px from the model.
+-}
+splitterPosition : Model -> Px
+splitterPosition (Model model) =
+    model.splitterPosition
 
 
 {-| Make pane splitter draggable or not
@@ -175,7 +183,6 @@ startAt startingSplitterPosition (Model model) =
             SplitPane.init
                 { paneWidth = 800
                 , paneHeight = 600
-                , orientation = Horizontal
                 }
                 |> draggable False
 -}
@@ -200,6 +207,45 @@ withFirstViewMinSize size (Model model) =
 withSecondViewMinSize : Size -> Model -> Model
 withSecondViewMinSize size (Model model) =
     Model { model | secondViewMinSize = size }
+
+
+{-| Set the orientation of the pane.
+-}
+orientation : Orientation -> Model -> Model
+orientation o (Model model) =
+    Model { model | orientation = o }
+
+
+{-| Change the width of the pane.
+-}
+changeWidth : Px -> Model -> Model
+changeWidth px (Model model) =
+    Model { model | paneWidth = px }
+
+
+{-| Change the height of the pane.
+-}
+changeHeight : Px -> Model -> Model
+changeHeight px (Model model) =
+    Model { model | paneHeight = px }
+
+
+sizeToPx :
+    { a | orientation : Orientation, paneHeight : Int, paneWidth : Int }
+    -> Size
+    -> Int
+sizeToPx model size =
+    case size of
+        Px n ->
+            n
+
+        Percentage p ->
+            case model.orientation of
+                Horizontal ->
+                    round <| p * toFloat model.paneWidth
+
+                Vertical ->
+                    round <| p * toFloat model.paneHeight
 
 
 
