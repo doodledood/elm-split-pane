@@ -6,7 +6,7 @@ Embed two views beside each other with a resizable splitter in between.
 
 ## Basic Usage
 
-Use it just like any other TEA components.
+Use it just like any other TEA component.
 
 **Don't forget to register subscriptions, or dragging won't work.**
 
