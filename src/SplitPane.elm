@@ -2,6 +2,7 @@ module SplitPane
     exposing
         ( view
         , viewWithCustomSplitter
+        , customSplitter
         , HtmlDetails
         , Model
         , Msg(..)
