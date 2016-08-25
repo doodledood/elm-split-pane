@@ -32,8 +32,8 @@ update msg model =
 
 
 view : SplitPane.Model -> Html SplitPane.Msg
-view model =
-    SplitPane.view identity model firstView secondView
+view =
+    SplitPane.view identity firstView secondView
 
 
 firstView : Html a

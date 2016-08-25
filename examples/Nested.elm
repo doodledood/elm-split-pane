@@ -78,7 +78,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    SplitPane.view Outer model.outer thirdView <| secondView model.inner
+    SplitPane.view Outer thirdView (secondView model.inner) model.outer
 
 
 firstView : Html a
@@ -87,9 +87,9 @@ firstView =
 
 
 secondView : SplitPane.Model -> Html Msg
-secondView model =
-    SplitPane.view Inner model firstView <|
-        unselectableImg "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg"
+secondView =
+    SplitPane.view Inner firstView 
+        <| unselectableImg "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg"
 
 
 thirdView : Html a

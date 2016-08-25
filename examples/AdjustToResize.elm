@@ -32,7 +32,7 @@ update msg model =
 view : SplitPane.Model -> Html SplitPane.Msg
 view model =
     let (firstView, secondView) = chooseViewsBasedOnSplitterPosition <| splitterPosition model
-    in SplitPane.view identity model firstView secondView
+    in SplitPane.view identity firstView secondView model
 
 chooseViewsBasedOnSplitterPosition : Px -> ( Html a, Html b )
 chooseViewsBasedOnSplitterPosition splitterPosition =
