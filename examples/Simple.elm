@@ -11,10 +11,13 @@ main =
     program
         { update = update
         , init = init
-        , subscriptions = SplitPane.subscriptions
+        , subscriptions = subscriptions
         , view = view
         }
 
+subscriptions : SplitPane.Model -> Sub SplitPane.Msg
+subscriptions =
+    SplitPane.subscriptions
 
 init : ( SplitPane.Model, Cmd a )
 init =

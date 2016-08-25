@@ -552,15 +552,16 @@ defaultSplitterDetails (Model model) =
 
 {-| Creates a custom splitter.
 
-        myCustomSplitter : Html msg
+        myCustomSplitter : CustomSplitter SplitPane.Msg
         myCustomSplitter =
-            customSplitter MyMsg 
-                { attributes: 
-                    [ style 
-                        [ ("width", "20px")
-                        , ("height", "20px") ]
-                    ] 
-                  children: 
+            customSplitter identity
+                { attributes =
+                    [ style
+                        [ ( "width", "20px" )
+                        , ( "height", "20px" )
+                        ]
+                    ]
+                , children =
                     []
                 }
 -}
@@ -600,18 +601,20 @@ view toMsg firstView secondView model =
 {-| A pane with custom splitter.
 
         view : SplitPane.Model -> Html SplitPane.Msg
-        view model =
-            SplitPane.viewWithCustomSplitter myCustomSplitter identity firstView secondView model
+        view =
+            SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView
 
-        myCustomSplitter : Html msg
+
+        myCustomSplitter : CustomSplitter SplitPane.Msg
         myCustomSplitter =
-            customSplitter MyMsg 
-                { attributes: 
-                    [ style 
-                        [ ("width", "20px")
-                        , ("height", "20px") ]
-                    ] 
-                  children: 
+            customSplitter identity
+                { attributes =
+                    [ style
+                        [ ( "width", "20px" )
+                        , ( "height", "20px" )
+                        ]
+                    ]
+                , children =
                     []
                 }
 
