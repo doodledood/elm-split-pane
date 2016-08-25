@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Elm Split Pane by doodledood</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Elm Split Pane</h1>
+      <h2 class="project-tagline">Split pane for Elm</h2>
+      <a href="https://github.com/doodledood/elm-split-pane" class="btn">View on GitHub</a>
+      <a href="https://github.com/doodledood/elm-split-pane/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/doodledood/elm-split-pane/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="split-pane" class="anchor" href="#split-pane" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Split Pane</h1>
+
+<p>A split pane for Elm.</p>
+
+<p>Embed two views beside each other with a resizable splitter in between.</p>
+
+<h2>
+<a id="basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic Usage</h2>
+
+<p>Use it just like any other TEA components.</p>
+
+<p><strong>Don't forget to register subscriptions, or dragging won't work.</strong></p>
+
+<div class="highlight highlight-source-elm"><pre><span class="pl-k">import</span> <span class="pl-c1">Html</span> <span class="pl-k">exposing</span> (..)
+<span class="pl-k">import</span> <span class="pl-c1">Html.App</span> <span class="pl-k">exposing</span> (<span class="pl-en">program</span>)
+<span class="pl-k">import</span> <span class="pl-c1">SplitPane</span>
+
+
+<span class="pl-en">main</span> <span class="pl-k">:</span> <span class="pl-k">Program</span> <span class="pl-k">Never</span>
+<span class="pl-en">main </span><span class="pl-k">=</span>
+    program
+        <span class="pl-c1"><span class="pl-c1">{</span></span> update <span class="pl-k">=</span> update
+        <span class="pl-c1"><span class="pl-c1">,</span></span> init <span class="pl-k">=</span> init
+        <span class="pl-c1"><span class="pl-c1">,</span></span> subscriptions <span class="pl-k">=</span> subscriptions
+        <span class="pl-c1"><span class="pl-c1">,</span></span> view <span class="pl-k">=</span> view
+        <span class="pl-c1"><span class="pl-c1">}</span></span>
+
+<span class="pl-en">subscriptions</span> <span class="pl-k">:</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Model</span> <span class="pl-k">-&gt;</span> <span class="pl-k">Sub</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Msg</span>
+<span class="pl-en">subscriptions </span><span class="pl-k">=</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>subscriptions
+
+<span class="pl-en">init</span> <span class="pl-k">:</span> ( <span class="pl-k">SplitPane</span>.<span class="pl-k">Model</span>, <span class="pl-k">Cmd</span> <span class="pl-smi">a</span> )
+<span class="pl-en">init </span><span class="pl-k">=</span>
+    <span class="pl-k">(</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>init
+        <span class="pl-c1"><span class="pl-c1">{</span></span> paneWidth <span class="pl-k">=</span> <span class="pl-c1">800</span>
+        <span class="pl-c1"><span class="pl-c1">,</span></span> paneHeight <span class="pl-k">=</span> <span class="pl-c1">600</span>
+        <span class="pl-c1"><span class="pl-c1">}</span></span>
+    <span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-c1">Cmd</span><span class="pl-k">.</span>none
+    <span class="pl-k">)</span>
+
+
+<span class="pl-en">update</span> <span class="pl-k">:</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Msg</span> <span class="pl-k">-&gt;</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Model</span> <span class="pl-k">-&gt;</span> ( <span class="pl-k">SplitPane</span>.<span class="pl-k">Model</span>, <span class="pl-k">Cmd</span> <span class="pl-smi">a</span> )
+<span class="pl-en">update </span>msg model <span class="pl-k">=</span>
+    <span class="pl-k">(</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>update msg model<span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-c1">Cmd</span><span class="pl-k">.</span>none <span class="pl-k">)</span>
+
+
+<span class="pl-en">view</span> <span class="pl-k">:</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Model</span> <span class="pl-k">-&gt;</span> <span class="pl-k">Html</span> <span class="pl-k">SplitPane</span>.<span class="pl-k">Msg</span>
+<span class="pl-en">view </span><span class="pl-k">=</span>
+    <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>view identity firstView secondView
+
+
+<span class="pl-en">firstView</span> <span class="pl-k">:</span> <span class="pl-k">Html</span> <span class="pl-smi">a</span>
+<span class="pl-en">firstView </span><span class="pl-k">=</span>
+    text <span class="pl-s"><span class="pl-pds">"</span>first view<span class="pl-pds">"</span></span>
+
+
+<span class="pl-en">secondView</span> <span class="pl-k">:</span> <span class="pl-k">Html</span> <span class="pl-smi">a</span>
+<span class="pl-en">secondView </span><span class="pl-k">=</span>
+    text <span class="pl-s"><span class="pl-pds">"</span>second view<span class="pl-pds">"</span></span></pre></div>
+
+<h2>
+<a id="usage-examples" class="anchor" href="#usage-examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage Examples</h2>
+
+<p><a href="https://github.com/doodledood/elm-split-pane/tree/master/examples">See examples for more complicated uses</a></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/doodledood/elm-split-pane">Elm Split Pane</a> is maintained by <a href="https://github.com/doodledood">doodledood</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
