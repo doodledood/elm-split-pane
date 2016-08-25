@@ -3,6 +3,7 @@ module SplitPane
         ( view
         , viewWithCustomSplitter
         , customSplitter
+        , CustomSplitter
         , HtmlDetails
         , Model
         , Msg(..)
@@ -73,7 +74,7 @@ Use these functions to inspect the state
 
 Apart for the simple view, there is a way to provide your own custom splitter:
 
-@docs viewWithCustomSplitter, customSplitter, HtmlDetails
+@docs viewWithCustomSplitter, customSplitter, CustomSplitter, HtmlDetails
 
 -}
 
@@ -491,6 +492,10 @@ type alias HtmlDetails msg =
     , children : List (Html msg)
     }
 
+{-| Decribes a custom splitter
+-}
+type CustomSplitter msg = CustomSplitter (Html msg)  
+
 
 defaultSplitterDetails : Model -> HtmlDetails msg
 defaultSplitterDetails (Model model) =
@@ -547,16 +552,27 @@ defaultSplitterDetails (Model model) =
 
 {-| Creates a custom splitter.
 
-    See implementation of 'defaultSplitterDetails' for an example
+        myCustomSplitter : Html msg
+        myCustomSplitter =
+            customSplitter MyMsg 
+                { attributes: 
+                    [ style 
+                        [ ("width", "20px")
+                        , ("height", "20px") ]
+                    ] 
+                  children: 
+                    []
+                }
 -}
 customSplitter
     : (Msg -> msg)
     -> HtmlDetails msg
-    -> Html msg
+    -> CustomSplitter msg
 customSplitter toMsg details =
-    span
-        (onMouseDown toMsg :: details.attributes)
-        details.children
+    CustomSplitter
+        <| span
+            (onMouseDown toMsg :: details.attributes)
+            details.children
 
 
 {-| Default pane with two views
@@ -577,8 +593,8 @@ customSplitter toMsg details =
 -}
 view  : (Msg -> msg) -> Html msg -> Html msg -> Model -> Html msg
 view toMsg firstView secondView model =
-    let splitterDetails = defaultSplitterDetails model
-    in viewWithCustomSplitter toMsg splitterDetails firstView secondView model
+    let defaultSplitter = customSplitter toMsg <| defaultSplitterDetails model
+    in viewWithCustomSplitter defaultSplitter firstView secondView model
 
 
 {-| A pane with custom splitter.
@@ -588,7 +604,7 @@ view toMsg firstView secondView model =
             SplitPane.viewWithCustomSplitter myCustomSplitter identity firstView secondView model
 
         myCustomSplitter : Html msg
-        myCustomSplitter toMsg _ _ =
+        myCustomSplitter =
             customSplitter MyMsg 
                 { attributes: 
                     [ style 
@@ -608,8 +624,8 @@ view toMsg firstView secondView model =
         secondView =
             img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 -}
-viewWithCustomSplitter : (Msg -> msg) -> HtmlDetails msg -> Html msg -> Html msg -> Model -> Html msg
-viewWithCustomSplitter toMsg customSplitterDetails firstView secondView (Model model) =
+viewWithCustomSplitter : CustomSplitter msg -> Html msg -> Html msg -> Model -> Html msg
+viewWithCustomSplitter (CustomSplitter customSplitterHtml) firstView secondView (Model model) =
     case model.orientation of
         Horizontal ->
             div
@@ -633,7 +649,7 @@ viewWithCustomSplitter toMsg customSplitterDetails firstView secondView (Model m
                         ]
                     ]
                     [ firstView ]
-                , customSplitter toMsg customSplitterDetails
+                , customSplitterHtml
                 , div
                     [ style
                         [ ( "width", pxToCss <| model.paneWidth - model.splitterPosition )
@@ -668,7 +684,7 @@ viewWithCustomSplitter toMsg customSplitterDetails firstView secondView (Model m
                         ]
                     ]
                     [ firstView ]
-                , customSplitter toMsg customSplitterDetails
+                , customSplitterHtml
                 , div
                     [ style
                         [ ( "height", pxToCss <| model.paneHeight - model.splitterPosition )
