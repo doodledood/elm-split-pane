@@ -207,7 +207,7 @@ orientation (Model model) =
 
 -- HELPERS - MODIFICATIONS
 
-{-| Sets the starting position for the splitter.
+{-| Sets the starting position for the splitter (relative to the edge of the pane).
 
         init =
             SplitPane.init
@@ -244,7 +244,7 @@ capSplitterPosition splitterPosition model =
     in
         cappedPosition
 
-{-| Moves the splitter to the requested location relative to the edge of the pane
+{-| Moves the splitter to the requested location (relative to the edge of the pane)
 
         init =
             SplitPane.init
