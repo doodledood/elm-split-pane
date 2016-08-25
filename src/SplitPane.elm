@@ -7,6 +7,9 @@ module SplitPane
         , Px
         , Size(..)
         , splitterPosition
+        , width
+        , height
+        , orientation
         , withFirstViewMinSize
         , withSecondViewMinSize
         , subscriptions
@@ -14,28 +17,44 @@ module SplitPane
         , init
         , startAt
         , draggable
-        , orientation
+        , changeOrientationTo
         , changeWidth
         , changeHeight
+        , moveSplitterTo
         )
 
 {-|
 
-Lel
+This is a split pane view library. Can be used to split views into multiple parts with a splitter between them.
+
+Check out the [examples][] to see how it works.
+
+[examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
 # View
+
 @docs view
 
 # Model
-@docs Model, Msg, Orientation, Px, Size, splitterPosition
+
+@docs Model, Msg, Orientation, Px, Size, splitterPosition, width, height, orientation
 
 # Init
-@docs init, startAt, draggable, withFirstViewMinSize, withSecondViewMinSize, orientation, changeWidth, changeHeight
+
+@docs init
 
 # Update
+
 @docs update
 
+# Helper functions
+
+Use these functions to update the state of the pane
+
+@docs startAt, draggable, withFirstViewMinSize, withSecondViewMinSize, changeOrientationTo, changeWidth, changeHeight, moveSplitterTo
+
 # Subscriptions
+
 @docs subscriptions
 
 -}
@@ -156,8 +175,19 @@ init { paneWidth, paneHeight } =
 startAt : Size -> Model -> Model
 startAt startingSplitterPosition (Model model) =
     let
+        cappedPosition =
+            capSplitterPosition startingSplitterPosition model
+    in
+        Model { model | splitterPosition = cappedPosition }
+
+capSplitterPosition
+    : Size
+    -> { a | orientation : Orientation, paneWidth : Int, paneHeight : Int }
+    -> Int
+capSplitterPosition splitterPosition model =
+    let
         pxSize =
-            sizeToPx model startingSplitterPosition
+            sizeToPx model splitterPosition
 
         cappedPosition =
             case model.orientation of
@@ -167,14 +197,42 @@ startAt startingSplitterPosition (Model model) =
                 Vertical ->
                     min (max pxSize 0) model.paneHeight
     in
-        Model { model | splitterPosition = cappedPosition }
+        cappedPosition
 
 
-{-| Retrieves current Px from the model.
+{-| Retrieves current splitter position in pixels from the model (relative to the edge of the pane).
 -}
 splitterPosition : Model -> Px
 splitterPosition (Model model) =
     model.splitterPosition
+
+{-| Retrieves current width of the pane from the model.
+-}
+width : Model -> Px
+width (Model model) =
+    model.paneWidth
+
+{-| Retrieves current height of the pane from the model.
+-}
+height : Model -> Px
+height (Model model) =
+    model.paneHeight
+
+{-| Retrieves current orientation of the pane from the model.
+-}
+orientation : Model -> Orientation
+orientation (Model model) =
+    model.orientation
+
+{-| Moves the splitter to the requested location relative to the edge of the pane
+-}
+moveSplitterTo : Size -> Model -> Model
+moveSplitterTo size (Model model) =
+    let
+        pxSize =
+            sizeToPx model size
+    in
+        Model { model | splitterPosition = pxSize }
 
 
 {-| Make pane splitter draggable or not
@@ -211,8 +269,8 @@ withSecondViewMinSize size (Model model) =
 
 {-| Set the orientation of the pane.
 -}
-orientation : Orientation -> Model -> Model
-orientation o (Model model) =
+changeOrientationTo : Orientation -> Model -> Model
+changeOrientationTo o (Model model) =
     Model { model | orientation = o }
 
 
