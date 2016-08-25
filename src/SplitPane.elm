@@ -1,8 +1,10 @@
 module SplitPane
     exposing
         ( view
+        , viewWithCustomSplitter
+        , HtmlDetails
         , Model
-        , Msg
+        , Msg(..)
         , Orientation(..)
         , Px
         , Size(..)
@@ -33,7 +35,7 @@ Check out the [examples][] to see how it works.
 
 # View
 
-@docs view
+@docs view, viewWithCustomSplitter, HtmlDetails, customSplitter
 
 # Model
 
@@ -180,8 +182,9 @@ startAt startingSplitterPosition (Model model) =
     in
         Model { model | splitterPosition = cappedPosition }
 
-capSplitterPosition
-    : Size
+
+capSplitterPosition :
+    Size
     -> { a | orientation : Orientation, paneWidth : Int, paneHeight : Int }
     -> Int
 capSplitterPosition splitterPosition model =
@@ -206,11 +209,13 @@ splitterPosition : Model -> Px
 splitterPosition (Model model) =
     model.splitterPosition
 
+
 {-| Retrieves current width of the pane from the model.
 -}
 width : Model -> Px
 width (Model model) =
     model.paneWidth
+
 
 {-| Retrieves current height of the pane from the model.
 -}
@@ -218,11 +223,13 @@ height : Model -> Px
 height (Model model) =
     model.paneHeight
 
+
 {-| Retrieves current orientation of the pane from the model.
 -}
 orientation : Model -> Orientation
 orientation (Model model) =
     model.orientation
+
 
 {-| Moves the splitter to the requested location relative to the edge of the pane
 -}
@@ -432,8 +439,16 @@ calculateMinAndMaxPositionsForSplitter model =
 -- VIEW
 
 
-defaultSplitter : (Msg -> msg) -> Bool -> Orientation -> Html msg
-defaultSplitter toMsg draggable orientation =
+{-| Lets you specify attributes such as style and children for the splitter element
+-}
+type alias HtmlDetails msg =
+    { attributes : List (Attribute msg)
+    , children : List (Html msg)
+    }
+
+
+defaultSplitterDetails : Model -> HtmlDetails msg
+defaultSplitterDetails (Model model) =
     let
         baseStyles =
             [ ( "width", "100%" )
@@ -446,39 +461,55 @@ defaultSplitter toMsg draggable orientation =
             , ( "userSelect", "none" )
             , ( "backgroundClip", "padding-box" )
             ]
-
-        createSpanWith styles =
-            span
-                [ onMouseDown toMsg
-                , style (baseStyles ++ styles)
-                ]
-                []
     in
-        case orientation of
+        case model.orientation of
             Horizontal ->
-                createSpanWith <|
-                    [ ( "width", "11px" )
-                    , ( "margin", "0 -5px" )
-                    , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
-                    , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
+                { attributes =
+                    [ style
+                        ( baseStyles ++ 
+                            [ ( "width", "11px" )
+                            , ( "margin", "0 -5px" )
+                            , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
+                            , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
+                            ]
+                            ++ if model.draggable then
+                                [ ( "cursor", "col-resize" ) ]
+                                else
+                                []
+                        )
                     ]
-                        ++ if draggable then
-                            [ ( "cursor", "col-resize" ) ]
-                           else
-                            []
-
+                , children = []
+                }
+                
             Vertical ->
-                createSpanWith <|
-                    [ ( "height", "11px" )
-                    , ( "width", "100%" )
-                    , ( "margin", "-5px 0" )
-                    , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
-                    , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
+                { attributes =
+                    [ style
+                        ( baseStyles ++
+                            [ ( "height", "11px" )
+                            , ( "width", "100%" )
+                            , ( "margin", "-5px 0" )
+                            , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
+                            , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
+                            ]
+                            ++ if model.draggable then
+                                [ ( "cursor", "row-resize" ) ]
+                                else
+                                []
+                        )
                     ]
-                        ++ if draggable then
-                            [ ( "cursor", "row-resize" ) ]
-                           else
-                            []
+                , children = []
+                }
+
+{-| Creates a custom splitter.
+-}
+customSplitter
+    : (Msg -> msg)
+    -> HtmlDetails msg
+    -> Html msg
+customSplitter toMsg details =
+    span
+        (onMouseDown toMsg :: details.attributes)
+        details.children
 
 
 {-| Default pane with two views
@@ -497,8 +528,41 @@ defaultSplitter toMsg draggable orientation =
         secondView =
             img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 -}
-view : (Msg -> msg) -> Model -> Html msg -> Html msg -> Html msg
-view toMsg (Model model) firstView secondView =
+view  : (Msg -> msg) -> Html msg -> Html msg -> Model -> Html msg
+view toMsg firstView secondView model =
+    let splitterDetails = defaultSplitterDetails model
+    in viewWithCustomSplitter toMsg splitterDetails firstView secondView model
+
+
+{-| A pane with custom splitter.
+
+        view : SplitPane.Model -> Html SplitPane.Msg
+        view model =
+            SplitPane.viewWithCustomSplitter myCustomSplitter identity model firstView secondView
+
+        myCustomSplitter : Html msg
+        myCustomSplitter toMsg _ _ =
+            customSplitter MyMsg 
+                { attributes: 
+                    [ style 
+                        [ ("width", "20px")
+                        , ("height", "20px") ]
+                    ] 
+                  children: 
+                    []
+                }
+
+        firstView : Html a
+        firstView =
+            img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
+
+
+        secondView : Html a
+        secondView =
+            img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
+-}
+viewWithCustomSplitter : (Msg -> msg) -> HtmlDetails msg -> Html msg -> Html msg -> Model -> Html msg
+viewWithCustomSplitter toMsg customSplitterDetails firstView secondView (Model model) =
     case model.orientation of
         Horizontal ->
             div
@@ -522,7 +586,7 @@ view toMsg (Model model) firstView secondView =
                         ]
                     ]
                     [ firstView ]
-                , defaultSplitter toMsg model.draggable model.orientation
+                , customSplitter toMsg customSplitterDetails
                 , div
                     [ style
                         [ ( "width", pxToCss <| model.paneWidth - model.splitterPosition )
@@ -557,7 +621,7 @@ view toMsg (Model model) firstView secondView =
                         ]
                     ]
                     [ firstView ]
-                , defaultSplitter toMsg model.draggable model.orientation
+                , customSplitter toMsg customSplitterDetails
                 , div
                     [ style
                         [ ( "height", pxToCss <| model.paneHeight - model.splitterPosition )
