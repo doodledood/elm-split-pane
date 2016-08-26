@@ -4,6 +4,8 @@ A split pane for Elm.
 
 Embed two views beside each other with a resizable splitter in between.
 
+**Currently does not support touch. Everything is implemented but the package cannot be published until [this issue is resolved.](https://github.com/elm-lang/package.elm-lang.org/issues/197)**
+
 ## Basic Usage
 
 Use it just like any other TEA component.
