@@ -80,9 +80,10 @@ Apart for the simple view, there is a way to provide your own custom splitter:
 
 import Html exposing (Html, span, div, Attribute)
 import Html.Attributes exposing (style)
-import Html.Events exposing (on)
+import Html.Events exposing (onWithOptions)
 import Mouse
-import Json.Decode as Json
+import Touch
+import Json.Decode as Json exposing (Decoder)
 import Maybe
 
 
@@ -119,7 +120,7 @@ type Model
         , secondViewMinSize : Size
         , paneWidth : Px
         , paneHeight : Px
-        , dragPosition : Maybe Mouse.Position
+        , dragPosition : Maybe Position
         , orientation : Orientation
         }
 
@@ -127,9 +128,19 @@ type Model
 {-| Used to track resizes.
 -}
 type Msg
-    = ResizeStarted Mouse.Position
-    | Resize Mouse.Position
-    | ResizeEnded Mouse.Position
+    = ResizeStarted Position
+    | Resize Position
+    | ResizeEnded Position
+
+
+{-| The position of the Touch relative to the whole document. So if you are
+scrolled down a bunch, you are still getting a coordinate relative to the
+very top left corner of the *whole* document.
+-}
+type alias Position =
+    { x : Int
+    , y : Int
+    }
 
 
 pxToCss : Px -> String
@@ -177,7 +188,9 @@ init { paneWidth, paneHeight } =
         }
 
 
+
 -- HELPERS - GETTERS
+
 
 {-| Retrieves current splitter position in pixels from the model (relative to the edge of the pane).
 -}
@@ -206,7 +219,10 @@ orientation : Model -> Orientation
 orientation (Model model) =
     model.orientation
 
+
+
 -- HELPERS - MODIFICATIONS
+
 
 {-| Sets the starting position for the splitter (relative to the edge of the pane).
 
@@ -244,6 +260,7 @@ capSplitterPosition splitterPosition model =
                     min (max pxSize 0) model.paneHeight
     in
         cappedPosition
+
 
 {-| Moves the splitter to the requested location (relative to the edge of the pane)
 
@@ -372,22 +389,22 @@ update msg (Model model) =
     else
         case msg of
             ResizeStarted pos ->
-                Model { model | dragPosition = Just pos }
+                Model { model | dragPosition = Just (Debug.log "started: " pos) }
 
             ResizeEnded _ ->
-                Model { model | dragPosition = Nothing }
+                Model { model | dragPosition = (Debug.log "ended" Nothing) }
 
             Resize curr ->
                 case model.orientation of
                     Horizontal ->
-                        resize model curr (\{ x, y } -> x)
+                        resize model (Debug.log "resize: " curr) (\{ x, y } -> x)
 
                     Vertical ->
-                        resize model curr (\{ x, y } -> y)
+                        resize model (Debug.log "resize: " curr) (\{ x, y } -> y)
 
 
 resize :
-    { dragPosition : Maybe Mouse.Position
+    { dragPosition : Maybe Position
     , draggable : Bool
     , firstViewMinSize : Size
     , paneHeight : Px
@@ -396,7 +413,7 @@ resize :
     , splitterPosition : Px
     , orientation : Orientation
     }
-    -> Mouse.Position
+    -> Position
     -> ({ x : Int, y : Int } -> Int)
     -> Model
 resize model newDragPosition diffProp =
@@ -492,9 +509,11 @@ type alias HtmlDetails msg =
     , children : List (Html msg)
     }
 
+
 {-| Decribes a custom splitter
 -}
-type CustomSplitter msg = CustomSplitter (Html msg)  
+type CustomSplitter msg
+    = CustomSplitter (Html msg)
 
 
 defaultSplitterDetails : Model -> HtmlDetails msg
@@ -516,39 +535,40 @@ defaultSplitterDetails (Model model) =
             Horizontal ->
                 { attributes =
                     [ style
-                        ( baseStyles ++ 
-                            [ ( "width", "11px" )
-                            , ( "margin", "0 -5px" )
-                            , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
-                            , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
-                            ]
+                        (baseStyles
+                            ++ [ ( "width", "11px" )
+                               , ( "margin", "0 -5px" )
+                               , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
+                               , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
+                               ]
                             ++ if model.draggable then
                                 [ ( "cursor", "col-resize" ) ]
-                                else
+                               else
                                 []
                         )
                     ]
                 , children = []
                 }
-                
+
             Vertical ->
                 { attributes =
                     [ style
-                        ( baseStyles ++
-                            [ ( "height", "11px" )
-                            , ( "width", "100%" )
-                            , ( "margin", "-5px 0" )
-                            , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
-                            , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
-                            ]
+                        (baseStyles
+                            ++ [ ( "height", "11px" )
+                               , ( "width", "100%" )
+                               , ( "margin", "-5px 0" )
+                               , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
+                               , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
+                               ]
                             ++ if model.draggable then
                                 [ ( "cursor", "row-resize" ) ]
-                                else
+                               else
                                 []
                         )
                     ]
                 , children = []
                 }
+
 
 {-| Creates a custom splitter.
 
@@ -565,14 +585,14 @@ defaultSplitterDetails (Model model) =
                     []
                 }
 -}
-customSplitter
-    : (Msg -> msg)
+customSplitter :
+    (Msg -> msg)
     -> HtmlDetails msg
     -> CustomSplitter msg
 customSplitter toMsg details =
-    CustomSplitter
-        <| span
-            (onMouseDown toMsg :: details.attributes)
+    CustomSplitter <|
+        span
+            (onMouseDown toMsg :: onTouchStart toMsg ::  details.attributes)
             details.children
 
 
@@ -592,10 +612,13 @@ customSplitter toMsg details =
         secondView =
             img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 -}
-view  : (Msg -> msg) -> Html msg -> Html msg -> Model -> Html msg
+view : (Msg -> msg) -> Html msg -> Html msg -> Model -> Html msg
 view toMsg firstView secondView model =
-    let defaultSplitter = customSplitter toMsg <| defaultSplitterDetails model
-    in viewWithCustomSplitter defaultSplitter firstView secondView model
+    let
+        defaultSplitter =
+            customSplitter toMsg <| defaultSplitterDetails model
+    in
+        viewWithCustomSplitter defaultSplitter firstView secondView model
 
 
 {-| A pane with custom splitter.
@@ -703,8 +726,18 @@ viewWithCustomSplitter (CustomSplitter customSplitterHtml) firstView secondView 
 
 onMouseDown : (Msg -> msg) -> Attribute msg
 onMouseDown toMsg =
-    on "mousedown" <| Json.map (toMsg << ResizeStarted) Mouse.position
+    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << ResizeStarted) Mouse.position
 
+
+onTouchStart : (Msg -> msg) -> Attribute msg
+onTouchStart toMsg =
+    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeStarted << touchToPosition) Touch.position
+
+touchToPosition : Touch.Position -> Position
+touchToPosition { x, y } =
+    { x = Maybe.withDefault 0 x 
+    , y = Maybe.withDefault 0 y 
+    }
 
 
 -- SUBSCRIPTIONS
@@ -722,6 +755,9 @@ subscriptions (Model model) =
                 Sub.batch
                     [ Mouse.moves Resize
                     , Mouse.ups ResizeEnded
+                    , Touch.moves (Resize << touchToPosition)
+                    , Touch.ends (ResizeEnded << touchToPosition)
+                    , Touch.cancels (ResizeEnded << touchToPosition)
                     ]
 
             Nothing ->
