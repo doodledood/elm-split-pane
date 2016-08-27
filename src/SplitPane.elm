@@ -6,7 +6,8 @@ module SplitPane
         , CustomSplitter
         , HtmlDetails
         , Model
-        , Msg(..)
+        , Msg
+        , WhatHappened(..)
         , Orientation(..)
         , Px
         , Size(..)
@@ -49,7 +50,7 @@ Check out the [examples][] to see how it works.
 
 # Update
 
-@docs update, Msg
+@docs update, WhatHappened, Msg
 
 # Subscriptions
 
@@ -124,13 +125,19 @@ type Model
         }
 
 
-{-| Used to track resizes.
+{-| Used to track SplitterMoves.
 -}
 type Msg
-    = ResizeStarted Position
-    | Resize Position
-    | ResizeEnded Position
+    = SplitterClick Position
+    | SplitterMove Position
+    | SplitterLeftAlone Position
 
+{-| Describes what happened. (after update)
+-}
+type WhatHappened
+    = ResizeStarted
+    | Resized Px
+    | ResizeEnded
 
 {-| The position of the Touch relative to the whole document. So if you are
 scrolled down a bunch, you are still getting a coordinate relative to the
@@ -381,26 +388,27 @@ sizeToPx model size =
 
 {-| Updates internal model.
 -}
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Maybe WhatHappened)
 update msg (Model model) =
     if not model.draggable then
-        Model model
+        (Model model, Nothing)
     else
         case msg of
-            ResizeStarted pos ->
-                Model { model | dragPosition = Just (Debug.log "started: " pos) }
+            SplitterClick pos ->
+                (Model { model | dragPosition = Just pos }, Just ResizeStarted)
 
-            ResizeEnded _ ->
-                Model { model | dragPosition = (Debug.log "ended" Nothing) }
+            SplitterLeftAlone _ ->
+                (Model { model | dragPosition = Nothing }, Just ResizeEnded)
 
-            Resize curr ->
+            SplitterMove curr ->
                 case model.orientation of
                     Horizontal ->
-                        resize model (Debug.log "resize: " curr) (\{ x, y } -> x)
+                        let newModel = resize model curr (\{ x, y } -> x)
+                        in (newModel, Just <| Resized <| splitterPosition newModel)
 
                     Vertical ->
-                        resize model (Debug.log "resize: " curr) (\{ x, y } -> y)
-
+                        let newModel = resize model curr (\{ x, y } -> y)
+                        in (newModel, Just <| Resized <| splitterPosition newModel)
 
 resize :
     { dragPosition : Maybe Position
@@ -586,12 +594,12 @@ defaultSplitterDetails (Model model) =
 -}
 customSplitter :
     (Msg -> msg)
-    -> HtmlDetails msg
+     -> HtmlDetails msg
     -> CustomSplitter msg
 customSplitter toMsg details =
     CustomSplitter <|
         span
-            (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg  :: onTouchCancel toMsg :: details.attributes)
+            (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg :: onTouchCancel toMsg :: details.attributes)
             details.children
 
 
@@ -724,26 +732,26 @@ viewWithCustomSplitter (CustomSplitter customSplitterHtml) firstView secondView 
 
 
 onMouseDown : (Msg -> msg) -> Attribute msg
-onMouseDown toMsg =
-    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << ResizeStarted) Mouse.position
+onMouseDown toMsg  =
+    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << SplitterClick) Mouse.position
 
 {-| Happens when the user starts touching element
 -}
 onTouchStart : (Msg -> msg) -> Attribute msg
 onTouchStart toMsg =
-    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeStarted << touchToPosition) touchPosition
+    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterClick << touchToPosition) touchPosition
 
 onTouchEnd : (Msg -> msg) -> Attribute msg
 onTouchEnd toMsg =
-    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeEnded << touchToPosition) touchPosition
+    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << touchToPosition) touchPosition
 
 onTouchCancel : (Msg -> msg) -> Attribute msg
 onTouchCancel toMsg =
-    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeEnded << touchToPosition) touchPosition
+    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << touchToPosition) touchPosition
 
 onTouchMove : (Msg -> msg) -> Attribute msg
 onTouchMove toMsg =
-    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << Resize << touchToPosition) touchPosition
+    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterMove << touchToPosition) touchPosition
 
 
 touchToPosition : TouchPosition -> Position
@@ -785,8 +793,8 @@ subscriptions (Model model) =
         case model.dragPosition of
             Just _ ->
                 Sub.batch
-                    [ Mouse.moves Resize
-                    , Mouse.ups ResizeEnded
+                    [ Mouse.moves SplitterMove
+                    , Mouse.ups SplitterLeftAlone
                     ]
 
             Nothing ->
