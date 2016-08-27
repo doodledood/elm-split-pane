@@ -43,7 +43,6 @@ init =
             { paneWidth = 800
             , paneHeight = 600
             }
-            |> draggable False
             |> startAt (Percentage 0.2)
     , inner =
         SplitPane.init
