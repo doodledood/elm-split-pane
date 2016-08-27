@@ -82,8 +82,7 @@ import Html exposing (Html, span, div, Attribute)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onWithOptions)
 import Mouse
-import Touch
-import Json.Decode as Json exposing (Decoder)
+import Json.Decode as Json exposing (Decoder, (:=), at)
 import Maybe
 
 
@@ -592,7 +591,7 @@ customSplitter :
 customSplitter toMsg details =
     CustomSplitter <|
         span
-            (onMouseDown toMsg :: onTouchStart toMsg ::  details.attributes)
+            (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg  :: onTouchCancel toMsg :: details.attributes)
             details.children
 
 
@@ -728,16 +727,49 @@ onMouseDown : (Msg -> msg) -> Attribute msg
 onMouseDown toMsg =
     onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << ResizeStarted) Mouse.position
 
-
+{-| Happens when the user starts touching element
+-}
 onTouchStart : (Msg -> msg) -> Attribute msg
 onTouchStart toMsg =
-    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeStarted << touchToPosition) Touch.position
+    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeStarted << touchToPosition) touchPosition
 
-touchToPosition : Touch.Position -> Position
+onTouchEnd : (Msg -> msg) -> Attribute msg
+onTouchEnd toMsg =
+    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeEnded << touchToPosition) touchPosition
+
+onTouchCancel : (Msg -> msg) -> Attribute msg
+onTouchCancel toMsg =
+    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << ResizeEnded << touchToPosition) touchPosition
+
+onTouchMove : (Msg -> msg) -> Attribute msg
+onTouchMove toMsg =
+    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << Resize << touchToPosition) touchPosition
+
+
+touchToPosition : TouchPosition -> Position
 touchToPosition { x, y } =
     { x = Maybe.withDefault 0 x 
     , y = Maybe.withDefault 0 y 
     }
+
+{-| The position of the touch relative to the whole document. So if you are
+scrolled down a bunch, you are still getting a coordinate relative to the
+very top left corner of the *whole* document.
+-}
+type alias TouchPosition =
+  { x : Maybe Int
+  , y : Maybe Int
+  }
+
+
+{-| The decoder used to extract a `Position` from a JavaScript touch event.
+-}
+touchPosition : Json.Decoder TouchPosition
+touchPosition =
+  Json.object2 TouchPosition 
+    (Json.maybe (at ["touches", "0", "clientX"] Json.int)) 
+    (Json.maybe (at ["touches", "0", "clientY"] Json.int))
+
 
 
 -- SUBSCRIPTIONS
@@ -755,9 +787,6 @@ subscriptions (Model model) =
                 Sub.batch
                     [ Mouse.moves Resize
                     , Mouse.ups ResizeEnded
-                    , Touch.moves (Resize << touchToPosition)
-                    , Touch.ends (ResizeEnded << touchToPosition)
-                    , Touch.cancels (ResizeEnded << touchToPosition)
                     ]
 
             Nothing ->
