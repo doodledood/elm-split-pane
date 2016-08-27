@@ -15,50 +15,74 @@ main =
         , view = view
         }
 
-subscriptions : SplitPane.Model -> Sub SplitPane.Msg
-subscriptions =
-    SplitPane.subscriptions
 
-init : ( SplitPane.Model, Cmd a )
+
+-- MODEL
+
+
+type alias Model =
+    { pane : SplitPane.Model
+    }
+
+
+type Msg
+    = PaneMsg SplitPane.Msg
+
+
+
+-- INIT
+
+
+init : ( Model, Cmd a )
 init =
-    ( SplitPane.init
-        { paneWidth = 800
-        , paneHeight = 600
-        }
+    ( { pane =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+      }
     , Cmd.none
     )
 
 
-update : SplitPane.Msg -> SplitPane.Model -> ( SplitPane.Model, Cmd a )
+
+-- UPDATE
+
+
+update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
-    ( SplitPane.update msg model, Cmd.none )
+    case msg of
+        PaneMsg paneMsg ->
+            let
+                ( updatedPane, _ ) =
+                    SplitPane.update paneMsg model.pane
+            in
+                ( { model | pane = updatedPane }, Cmd.none )
 
 
-view : SplitPane.Model -> Html SplitPane.Msg
-view =
-    SplitPane.view identity firstView secondView
+
+-- VIEW
+
+
+view : Model -> Html Msg
+view model =
+    SplitPane.view PaneMsg firstView secondView model.pane
 
 
 firstView : Html a
 firstView =
-    unselectableImg "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg"
+    img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
 
 
 secondView : Html a
 secondView =
-    unselectableImg "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg"
+    img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 
 
-unselectableImg : String -> Html a
-unselectableImg url =
-    img
-        [ src url
-        , style
-            [ ( "userSelect", "none" )
-            , ( "webkitUserSelect", "none" )
-            , ( "mozUserSelect", "none" )
-            , ( "msUserSelect", "none" )
-            , ( "pointerEvents", "none" )
-            ]
-        ]
-        []
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map PaneMsg <| SplitPane.subscriptions model.pane

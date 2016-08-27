@@ -25,6 +25,10 @@ main =
         }
 
 
+
+-- MODEL
+
+
 type Msg
     = Outer SplitPane.Msg
     | Inner SplitPane.Msg
@@ -34,6 +38,10 @@ type alias Model =
     { outer : SplitPane.Model
     , inner : SplitPane.Model
     }
+
+
+
+-- INIT
 
 
 init : ( Model, Cmd a )
@@ -57,58 +65,59 @@ init =
         ! []
 
 
+
+-- UPDATE
+
+
 update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
     case msg of
         Outer m ->
-            ( { model
-                | outer = SplitPane.update m model.outer
-              }
-            , Cmd.none
-            )
+            let
+                ( newOuterModel, _ ) =
+                    SplitPane.update m model.outer
+            in
+                ( { model
+                    | outer = newOuterModel
+                  }
+                , Cmd.none
+                )
 
         Inner m ->
-            ( { model
-                | inner = SplitPane.update m model.inner
-              }
-            , Cmd.none
-            )
+            let
+                ( newInnerModel, _ ) =
+                    SplitPane.update m model.inner
+            in
+                ( { model
+                    | inner = newInnerModel
+                  }
+                , Cmd.none
+                )
+
+
+
+-- VIEW
 
 
 view : Model -> Html Msg
 view model =
-    SplitPane.view Outer thirdView (secondView model.inner) model.outer
+    SplitPane.view Outer leftView (rightView model.inner) model.outer
 
 
-firstView : Html a
-firstView =
-    unselectableImg "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg"
+leftView : Html a
+leftView =
+    img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
 
 
-secondView : SplitPane.Model -> Html Msg
-secondView =
-    SplitPane.view Inner firstView 
-        <| unselectableImg "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg"
+rightView : SplitPane.Model -> Html Msg
+rightView =
+    SplitPane.view Inner
+        (img [ src "https://pbs.twimg.com/profile_images/378800000532546226/dbe5f0727b69487016ffd67a6689e75a.jpeg" ] [])
+        (img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] [])
 
 
-thirdView : Html a
-thirdView =
-    unselectableImg "https://pbs.twimg.com/profile_images/378800000532546226/dbe5f0727b69487016ffd67a6689e75a.jpeg"
 
-
-unselectableImg : String -> Html a
-unselectableImg url =
-    img
-        [ src url
-        , style
-            [ ( "userSelect", "none" )
-            , ( "webkitUserSelect", "none" )
-            , ( "mozUserSelect", "none" )
-            , ( "msUserSelect", "none" )
-            , ( "pointerEvents", "none" )
-            ]
-        ]
-        []
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg

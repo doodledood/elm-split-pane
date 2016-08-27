@@ -3,6 +3,8 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
+import Html.Events exposing (onClick)
+import Maybe
 import SplitPane exposing (customSplitter, CustomSplitter, Msg)
 
 
@@ -16,34 +18,70 @@ main =
         }
 
 
-subscriptions : SplitPane.Model -> Sub SplitPane.Msg
-subscriptions =
-    SplitPane.subscriptions
+
+-- MODEL
 
 
-init : ( SplitPane.Model, Cmd a )
+type alias Model =
+    { pane : SplitPane.Model
+    , message : Maybe String
+    }
+
+
+type Msg
+    = PaneMsg SplitPane.Msg
+    | CustomSplitterButtonClick
+
+
+
+-- INIT
+
+
+init : ( Model, Cmd a )
 init =
-    ( SplitPane.init
-        { paneWidth = 800
-        , paneHeight = 600
-        }
+    ( { pane =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+      , message = Nothing
+      }
     , Cmd.none
     )
 
 
-update : SplitPane.Msg -> SplitPane.Model -> ( SplitPane.Model, Cmd a )
+
+-- UPDATE
+
+
+update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
-    ( SplitPane.update msg model, Cmd.none )
+    case msg of
+        PaneMsg paneMsg ->
+            let
+                ( updatedPane, _ ) =
+                    SplitPane.update paneMsg model.pane
+            in
+                ( { model | pane = updatedPane }, Cmd.none )
+        CustomSplitterButtonClick ->
+            ( { model | message = Just "clicked a button inside the custom splitter." }, Cmd.none)
 
 
-view : SplitPane.Model -> Html SplitPane.Msg
-view =
-    SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView
+
+-- VIEW
 
 
-myCustomSplitter : CustomSplitter SplitPane.Msg
+view : Model -> Html Msg
+view model =
+    div []
+        [ SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView model.pane
+        , text <| Maybe.withDefault "" model.message
+        ]
+
+
+myCustomSplitter : CustomSplitter Msg
 myCustomSplitter =
-    customSplitter identity
+    customSplitter PaneMsg
         { attributes =
             [ style
                 [ ( "width", "40px" )
@@ -53,30 +91,24 @@ myCustomSplitter =
                 ]
             ]
         , children =
-            []
+            [ button [ onClick CustomSplitterButtonClick ] [ text "click me" ] ]
         }
 
 
 firstView : Html a
 firstView =
-    unselectableImg "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg"
+    img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
 
 
 secondView : Html a
 secondView =
-    unselectableImg "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg"
+    img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 
 
-unselectableImg : String -> Html a
-unselectableImg url =
-    img
-        [ src url
-        , style
-            [ ( "userSelect", "none" )
-            , ( "webkitUserSelect", "none" )
-            , ( "mozUserSelect", "none" )
-            , ( "msUserSelect", "none" )
-            , ( "pointerEvents", "none" )
-            ]
-        ]
-        []
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map PaneMsg <| SplitPane.subscriptions model.pane
