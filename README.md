@@ -8,11 +8,14 @@ Embed two views beside each other with a resizable splitter in between.
 
 Use it just like any other TEA component.
 
-**Don't forget to register subscriptions, or dragging won't work.**
+**Don't forget to register subscriptions, or dragging on desktop won't work.**
 
 ```elm
+module Main exposing (..)
+
 import Html exposing (..)
 import Html.App exposing (program)
+import Html.Attributes exposing (src, style)
 import SplitPane
 
 
@@ -25,27 +28,58 @@ main =
         , view = view
         }
 
-subscriptions : SplitPane.Model -> Sub SplitPane.Msg
-subscriptions = SplitPane.subscriptions
 
-init : ( SplitPane.Model, Cmd a )
+
+-- MODEL
+
+
+type alias Model =
+    { pane : SplitPane.Model
+    }
+
+
+type Msg
+    = PaneMsg SplitPane.Msg
+
+
+
+-- INIT
+
+
+init : ( Model, Cmd a )
 init =
-    ( SplitPane.init
-        { paneWidth = 800
-        , paneHeight = 600
-        }
+    ( { pane =
+            SplitPane.init
+                { paneWidth = 800
+                , paneHeight = 600
+                }
+      }
     , Cmd.none
     )
 
 
-update : SplitPane.Msg -> SplitPane.Model -> ( SplitPane.Model, Cmd a )
+
+-- UPDATE
+
+
+update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
-    ( SplitPane.update msg model, Cmd.none )
+    case msg of
+        PaneMsg paneMsg ->
+            let
+                ( updatedPane, _ ) =
+                    SplitPane.update paneMsg model.pane
+            in
+                ( { model | pane = updatedPane }, Cmd.none )
 
 
-view : SplitPane.Model -> Html SplitPane.Msg
-view =
-    SplitPane.view identity firstView secondView
+
+-- VIEW
+
+
+view : Model -> Html Msg
+view model =
+    SplitPane.view PaneMsg firstView secondView model.pane
 
 
 firstView : Html a
@@ -56,6 +90,16 @@ firstView =
 secondView : Html a
 secondView =
     text "second view"
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map PaneMsg <| SplitPane.subscriptions model.pane
+
 ```
 
 
