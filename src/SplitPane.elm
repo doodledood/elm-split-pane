@@ -139,10 +139,6 @@ type WhatHappened
     | Resized Px
     | ResizeEnded
 
-{-| The position of the Touch relative to the whole document. So if you are
-scrolled down a bunch, you are still getting a coordinate relative to the
-very top left corner of the *whole* document.
--}
 type alias Position =
     { x : Int
     , y : Int
@@ -232,12 +228,11 @@ orientation (Model model) =
 
 {-| Sets the starting position for the splitter (relative to the edge of the pane).
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> startAt 300
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> startAt 300
 -}
 startAt : Size -> Model -> Model
 startAt startingSplitterPosition (Model model) =
@@ -270,12 +265,11 @@ capSplitterPosition splitterPosition model =
 
 {-| Moves the splitter to the requested location (relative to the edge of the pane)
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> moveSplitterTo (Percentage 0.33)
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> moveSplitterTo (Percentage 0.33)
 -}
 moveSplitterTo : Size -> Model -> Model
 moveSplitterTo size (Model model) =
@@ -288,12 +282,11 @@ moveSplitterTo size (Model model) =
 
 {-| Make pane splitter draggable or not
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> draggable False
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> draggable False
 -}
 draggable : Bool -> Model -> Model
 draggable isDraggable (Model model) =
@@ -304,12 +297,11 @@ draggable isDraggable (Model model) =
     When the pane is horizontal, this is the left view.
     When the pane is vertical, this is the top view.
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> withFirstViewMinSize (Percentage 0.2)
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> withFirstViewMinSize (Percentage 0.2)
 -}
 withFirstViewMinSize : Size -> Model -> Model
 withFirstViewMinSize size (Model model) =
@@ -320,12 +312,11 @@ withFirstViewMinSize size (Model model) =
     When the pane is horizontal, this is the right view.
     When the pane is vertical, this is the bottom view.
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> withSecondViewMinSize (Px 100)
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> withSecondViewMinSize (Px 100)
 -}
 withSecondViewMinSize : Size -> Model -> Model
 withSecondViewMinSize size (Model model) =
@@ -334,12 +325,11 @@ withSecondViewMinSize size (Model model) =
 
 {-| Set the orientation of the pane.
 
-        init =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
-                |> changeOrientationTo Vertical
+        SplitPane.init
+            { paneWidth = 800
+            , paneHeight = 600
+            }
+            |> changeOrientationTo Vertical
 -}
 changeOrientationTo : Orientation -> Model -> Model
 changeOrientationTo o (Model model) =
@@ -579,9 +569,9 @@ defaultSplitterDetails (Model model) =
 
 {-| Creates a custom splitter.
 
-        myCustomSplitter : CustomSplitter SplitPane.Msg
+        myCustomSplitter : CustomSplitter Msg
         myCustomSplitter =
-            customSplitter identity
+            customSplitter PaneMsg
                 { attributes =
                     [ style
                         [ ( "width", "20px" )
@@ -605,9 +595,9 @@ customSplitter toMsg details =
 
 {-| Default pane with two views
 
-        view : SplitPane.Model -> Html SplitPane.Msg
+        view : Model -> Html Msg
         view model =
-            SplitPane.view identity firstView secondView model
+            SplitPane.view PaneMsg firstView secondView model.pane
 
 
         firstView : Html a
@@ -630,14 +620,14 @@ view toMsg firstView secondView model =
 
 {-| A pane with custom splitter.
 
-        view : SplitPane.Model -> Html SplitPane.Msg
+        view : Model -> Html Msg
         view =
             SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView
 
 
-        myCustomSplitter : CustomSplitter SplitPane.Msg
+        myCustomSplitter : CustomSplitter Msg
         myCustomSplitter =
-            customSplitter identity
+            customSplitter PaneMsg
                 { attributes =
                     [ style
                         [ ( "width", "20px" )
@@ -735,8 +725,6 @@ onMouseDown : (Msg -> msg) -> Attribute msg
 onMouseDown toMsg  =
     onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << SplitterClick) Mouse.position
 
-{-| Happens when the user starts touching element
--}
 onTouchStart : (Msg -> msg) -> Attribute msg
 onTouchStart toMsg =
     onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterClick << touchToPosition) touchPosition
