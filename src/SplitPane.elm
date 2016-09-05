@@ -1,18 +1,20 @@
 module SplitPane
     exposing
         ( view
-        , viewWithCustomSplitter
-        , customSplitter
+        , ViewConfig
+        , createViewConfig
+        , createCustomSplitter
         , CustomSplitter
         , HtmlDetails
         , Model
         , Msg
-        , WhatHappened(..)
         , Orientation(..)
-        , Px
-        , Size(..)
+        , Percentage
+        , draggable
         , subscriptions
         , update
+        , UpdateConfig
+        , createUpdateConfig
         , init
         )
 
@@ -24,32 +26,7 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-# View
-
-@docs view
-
-# Model
-
-@docs Model, Orientation, Px, Size
-
-# Init
-
-@docs init
-
-# Update
-
-@docs update, WhatHappened, Msg
-
-# Subscriptions
-
-@docs subscriptions
-
-# Customization
-
-Apart for the simple view, there is a way to provide your own custom splitter:
-
-@docs viewWithCustomSplitter, customSplitter, CustomSplitter, HtmlDetails
-
+@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, UpdateConfig, createUpdateConfig, init
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -64,17 +41,10 @@ import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSpl
 -- MODEL
 
 
-{-| Size in either pixels or percentage.
+{-| A percentage value between 0.0 and 1.0
 -}
-type Size
-    = Px Int
-    | Percentage Float
-
-
-{-| Size in pixels.
--}
-type alias Px =
-    Int
+type alias Percentage =
+    Float
 
 
 {-| Orientation of pane.
@@ -88,14 +58,12 @@ type Orientation
 -}
 type Model
     = Model
-        { splitterPosition : Float
+        { dragPosition : Maybe Position
         , draggable : Bool
-        , firstViewMinSize : Size
-        , secondViewMinSize : Size
-        , paneWidth : Maybe Px
-        , paneHeight : Maybe Px
-        , dragPosition : Maybe Position
         , orientation : Orientation
+        , splitterPosition : Percentage
+        , paneWidth : Maybe Int
+        , paneHeight : Maybe Int
         }
 
 
@@ -107,18 +75,30 @@ type Msg
     | SplitterLeftAlone Position
 
 
-{-| Describes what happened. (after update)
--}
-type WhatHappened
-    = ResizeStarted
-    | Resized Float
-    | ResizeEnded
-
-
 type alias Position =
     { x : Int
     , y : Int
     }
+
+
+{-| Sets whether the pane is draggable or not
+-}
+draggable : Bool -> Model -> Model
+draggable isDraggable (Model model) =
+    Model { model | draggable = isDraggable }
+
+
+{-| Changes orientation of the pane.
+-}
+orientation : Orientation -> Model -> Model
+orientation o (Model model) =
+    Model { model | orientation = o }
+
+
+withSplitterAt : Percentage -> Model -> Model
+withSplitterAt newPosition (Model model) =
+    Model
+        { model | splitterPosition = max 1.0 <| min newPosition 0.0 }
 
 
 
@@ -135,14 +115,12 @@ type alias Position =
 init : Orientation -> Model
 init orientation =
     Model
-        { splitterPosition = 0.5
+        { dragPosition = Nothing
         , draggable = True
-        , firstViewMinSize = Px 0
-        , secondViewMinSize = Px 0
+        , orientation = orientation
+        , splitterPosition = 0.5
         , paneWidth = Nothing
         , paneHeight = Nothing
-        , dragPosition = Nothing
-        , orientation = orientation
         }
 
 
@@ -163,10 +141,42 @@ domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
             { x = 0, y = 0 }
 
 
+{-| Configuration for updates.
+-}
+type UpdateConfig msg
+    = UpdateConfig
+        { onResize : Percentage -> Maybe msg
+        , onResizeStarted : Maybe msg
+        , onResizeEnded : Maybe msg
+        }
+
+
+{-| Creates the update configuration.
+    Gives you the option to respond to various things that happen.
+
+    For example:
+    - Draw a different view when the pane is resized:
+
+        updateConfig
+            { onResize (\p -> Just (SwitchViews p))
+            , onResizeStarted Nothing
+            , onResizeEnded Nothing
+            }
+-}
+createUpdateConfig :
+    { onResize : Percentage -> Maybe msg
+    , onResizeStarted : Maybe msg
+    , onResizeEnded : Maybe msg
+    }
+    -> UpdateConfig msg
+createUpdateConfig config =
+    UpdateConfig config
+
+
 {-| Updates internal model.
 -}
-update : Msg -> Model -> ( Model, Maybe WhatHappened )
-update msg (Model model) =
+update : UpdateConfig msg -> Msg -> Model -> ( Model, Maybe msg )
+update (UpdateConfig updateConfig) msg (Model model) =
     if not model.draggable then
         ( Model model, Nothing )
     else
@@ -178,11 +188,13 @@ update msg (Model model) =
                         , paneWidth = Just pos.parentWidth
                         , paneHeight = Just pos.parentHeight
                     }
-                , Just ResizeStarted
+                , updateConfig.onResizeStarted
                 )
 
             SplitterLeftAlone _ ->
-                ( Model { model | dragPosition = Nothing }, Just ResizeEnded )
+                ( Model { model | dragPosition = Nothing }
+                , updateConfig.onResizeEnded
+                )
 
             SplitterMove curr ->
                 case model.dragPosition of
@@ -199,11 +211,11 @@ update msg (Model model) =
                                     | dragPosition = Just curr
                                     , splitterPosition = newSplitterPosition
                                 }
-                            , Just <| Resized newSplitterPosition
+                            , updateConfig.onResize newSplitterPosition
                             )
 
 
-resize : Orientation -> Float -> Position -> Position -> Maybe Int -> Maybe Int -> Float
+resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage
 resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight =
     case ( paneWidth, paneHeight ) of
         ( Just width, Just height ) ->
@@ -233,22 +245,22 @@ type alias HtmlDetails msg =
 {-| Decribes a custom splitter
 -}
 type CustomSplitter msg
-    = CustomSplitter (Model -> Html msg)
+    = CustomSplitter (Html msg)
 
 
-createDefaultSplitterDetails : Model -> HtmlDetails msg
-createDefaultSplitterDetails (Model model) =
-    case model.orientation of
+createDefaultSplitterDetails : Orientation -> Bool -> HtmlDetails msg
+createDefaultSplitterDetails orientation draggable =
+    case orientation of
         Horizontal ->
             { attributes =
-                [ defaultHorizontalSplitterStyle model.draggable
+                [ defaultHorizontalSplitterStyle draggable
                 ]
             , children = []
             }
 
         Vertical ->
             { attributes =
-                [ defaultVerticalSplitterStyle model.draggable
+                [ defaultVerticalSplitterStyle draggable
                 ]
             , children = []
             }
@@ -269,46 +281,47 @@ createDefaultSplitterDetails (Model model) =
                     []
                 }
 -}
-customSplitter :
+createCustomSplitter :
     (Msg -> msg)
-    -> (Model -> HtmlDetails msg)
+    -> HtmlDetails msg
     -> CustomSplitter msg
-customSplitter toMsg createDetails =
+createCustomSplitter toMsg details =
     CustomSplitter <|
-        (\model ->
-            let
-                details =
-                    createDetails model
-            in
-                span
-                    (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg :: onTouchCancel toMsg :: details.attributes)
-                    details.children
-        )
+        span
+            (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg :: onTouchCancel toMsg :: details.attributes)
+            details.children
 
 
-{-| Default pane with two views
-
-        view : Model -> Html Msg
-        view model =
-            SplitPane.view PaneMsg firstView secondView model.pane
-
-
-        firstView : Html a
-        firstView =
-            img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
-
-
-        secondView : Html a
-        secondView =
-            img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
+{-| Configuration for the view.
 -}
-view : (Msg -> msg) -> Html msg -> Html msg -> Model -> Html msg
-view toMsg firstView secondView model =
-    let
-        defaultSplitter =
-            customSplitter toMsg createDefaultSplitterDetails
-    in
-        viewWithCustomSplitter defaultSplitter firstView secondView model
+type ViewConfig msg
+    = ViewConfig
+        { toMsg : Msg -> msg
+        , splitter : Maybe (CustomSplitter msg)
+        , resizeLimits : ( Percentage, Percentage )
+        }
+
+
+{-| Creates a configuration for the view.
+
+-}
+createViewConfig :
+    { toMsg : Msg -> msg
+    , customSplitter : Maybe (CustomSplitter msg)
+    }
+    -> ViewConfig msg
+createViewConfig { toMsg, customSplitter } =
+    ViewConfig
+        { toMsg = toMsg
+        , resizeLimits = ( 0.0, 1.0 )
+        , splitter = customSplitter
+        }
+
+
+withResizeLimits : ( Percentage, Percentage ) -> ViewConfig msg -> ViewConfig msg
+withResizeLimits resizeLimits (ViewConfig viewConfig) =
+    ViewConfig
+        { viewConfig | resizeLimits = resizeLimits }
 
 
 {-| A pane with custom splitter.
@@ -340,8 +353,8 @@ view toMsg firstView secondView model =
         secondView =
             img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 -}
-viewWithCustomSplitter : CustomSplitter msg -> Html msg -> Html msg -> Model -> Html msg
-viewWithCustomSplitter (CustomSplitter createSplitter) firstView secondView ((Model model) as m) =
+view : ViewConfig msg -> Html msg -> Html msg -> Model -> Html msg
+view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
     div
         [ class "pane-container"
         , paneContainerStyle <| model.orientation == Horizontal
@@ -351,13 +364,32 @@ viewWithCustomSplitter (CustomSplitter createSplitter) firstView secondView ((Mo
             , childViewStyle model.splitterPosition
             ]
             [ firstView ]
-        , createSplitter m
+        , getConcreteSplitter viewConfig model.orientation model.draggable
         , div
             [ class "pane-second-view"
             , childViewStyle <| 1 - model.splitterPosition
             ]
             [ secondView ]
         ]
+
+
+getConcreteSplitter :
+    { toMsg : Msg -> msg
+    , splitter : Maybe (CustomSplitter msg)
+    , resizeLimits : ( Percentage, Percentage )
+    }
+    -> Orientation
+    -> Bool
+    -> Html msg
+getConcreteSplitter viewConfig orientation draggable =
+    case viewConfig.splitter of
+        Just (CustomSplitter splitter) ->
+            splitter
+
+        Nothing ->
+            case createCustomSplitter viewConfig.toMsg <| createDefaultSplitterDetails orientation draggable of
+                CustomSplitter defaultSplitter ->
+                    defaultSplitter
 
 
 onMouseDown : (Msg -> msg) -> Attribute msg
