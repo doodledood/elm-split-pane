@@ -58,7 +58,7 @@ import Html.Events exposing (onWithOptions)
 import Mouse
 import Json.Decode as Json exposing (Decoder, (:=), at)
 import Maybe
-import Styles exposing (paneContainerStyle, childViewStyle)
+import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSplitterStyle, defaultVerticalSplitterStyle)
 
 
 -- MODEL
@@ -238,57 +238,20 @@ type CustomSplitter msg
 
 createDefaultSplitterDetails : Model -> HtmlDetails msg
 createDefaultSplitterDetails (Model model) =
-    let
-        baseStyles =
-            [ ( "width", "100%" )
-            , ( "background", "#000" )
-            , ( "boxSizing", "border-box" )
-            , ( "opacity", ".2" )
-            , ( "zIndex", "1" )
-            , ( "webkitUserSelect", "none" )
-            , ( "mozUserSelect", "none" )
-            , ( "userSelect", "none" )
-            , ( "backgroundClip", "padding-box" )
-            ]
-    in
-        case model.orientation of
-            Horizontal ->
-                { attributes =
-                    [ style
-                        (baseStyles
-                            ++ [ ( "width", "11px" )
-                               , ( "height", "100%" )
-                               , ( "margin", "0 -5px" )
-                               , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
-                               , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
-                               ]
-                            ++ if model.draggable then
-                                [ ( "cursor", "col-resize" ) ]
-                               else
-                                []
-                        )
-                    ]
-                , children = []
-                }
+    case model.orientation of
+        Horizontal ->
+            { attributes =
+                [ defaultHorizontalSplitterStyle model.draggable
+                ]
+            , children = []
+            }
 
-            Vertical ->
-                { attributes =
-                    [ style
-                        (baseStyles
-                            ++ [ ( "height", "11px" )
-                               , ( "width", "100%" )
-                               , ( "margin", "-5px 0" )
-                               , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
-                               , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
-                               ]
-                            ++ if model.draggable then
-                                [ ( "cursor", "row-resize" ) ]
-                               else
-                                []
-                        )
-                    ]
-                , children = []
-                }
+        Vertical ->
+            { attributes =
+                [ defaultVerticalSplitterStyle model.draggable
+                ]
+            , children = []
+            }
 
 
 {-| Creates a custom splitter.
