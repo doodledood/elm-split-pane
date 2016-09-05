@@ -62,6 +62,7 @@ type Model
         , draggable : Bool
         , orientation : Orientation
         , splitterPosition : Percentage
+        , resizeLimits : ( Percentage, Percentage )
         , paneWidth : Maybe Int
         , paneHeight : Maybe Int
         }
@@ -95,10 +96,20 @@ orientation o (Model model) =
     Model { model | orientation = o }
 
 
+{-| Changes the splitter position
+-}
 withSplitterAt : Percentage -> Model -> Model
 withSplitterAt newPosition (Model model) =
     Model
-        { model | splitterPosition = max 1.0 <| min newPosition 0.0 }
+        { model | splitterPosition = min 1.0 <| max newPosition 0.0 }
+
+
+{-| Changes resizes limits
+-}
+withResizeLimits : Percentage -> Percentage -> Model -> Model
+withResizeLimits minLimit maxLimit (Model model) =
+    Model
+        { model | resizeLimits = ( minLimit, maxLimit ) }
 
 
 
@@ -119,6 +130,7 @@ init orientation =
         , draggable = True
         , orientation = orientation
         , splitterPosition = 0.5
+        , resizeLimits = ( 0.0, 1.0 )
         , paneWidth = Nothing
         , paneHeight = Nothing
         }
@@ -203,8 +215,11 @@ update (UpdateConfig updateConfig) msg (Model model) =
 
                     Just dragPos ->
                         let
+                            ( minLimit, maxLimit ) =
+                                model.resizeLimits
+
                             newSplitterPosition =
-                                resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight
+                                resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight minLimit maxLimit
                         in
                             ( Model
                                 { model
@@ -215,16 +230,16 @@ update (UpdateConfig updateConfig) msg (Model model) =
                             )
 
 
-resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage
-resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight =
+resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> Percentage
+resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight minLimit maxLimit =
     case ( paneWidth, paneHeight ) of
         ( Just width, Just height ) ->
             case orientation of
                 Horizontal ->
-                    splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
+                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
 
                 Vertical ->
-                    splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
+                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
 
         ( _, _ ) ->
             splitterPosition
@@ -298,7 +313,6 @@ type ViewConfig msg
     = ViewConfig
         { toMsg : Msg -> msg
         , splitter : Maybe (CustomSplitter msg)
-        , resizeLimits : ( Percentage, Percentage )
         }
 
 
@@ -313,15 +327,8 @@ createViewConfig :
 createViewConfig { toMsg, customSplitter } =
     ViewConfig
         { toMsg = toMsg
-        , resizeLimits = ( 0.0, 1.0 )
         , splitter = customSplitter
         }
-
-
-withResizeLimits : ( Percentage, Percentage ) -> ViewConfig msg -> ViewConfig msg
-withResizeLimits resizeLimits (ViewConfig viewConfig) =
-    ViewConfig
-        { viewConfig | resizeLimits = resizeLimits }
 
 
 {-| A pane with custom splitter.
@@ -376,7 +383,6 @@ view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
 getConcreteSplitter :
     { toMsg : Msg -> msg
     , splitter : Maybe (CustomSplitter msg)
-    , resizeLimits : ( Percentage, Percentage )
     }
     -> Orientation
     -> Bool
