@@ -3,16 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane
-    exposing
-        ( Orientation(..)
-        , draggable
-        , startAt
-        , withFirstViewMinSize
-        , withSecondViewMinSize
-        , changeOrientationTo
-        , Size(..)
-        )
+import SplitPane exposing (Orientation(..))
 
 
 main : Program Never
@@ -47,20 +38,9 @@ type alias Model =
 init : ( Model, Cmd a )
 init =
     { outer =
-        SplitPane.init
-            { paneWidth = 800
-            , paneHeight = 600
-            }
-            |> startAt (Percentage 0.2)
+        SplitPane.init Horizontal
     , inner =
-        SplitPane.init
-            { paneWidth = 600
-            , paneHeight = 600
-            }
-            |> changeOrientationTo Vertical
-            |> startAt (Px 400)
-            |> withFirstViewMinSize (Percentage 0.2)
-            |> withSecondViewMinSize (Px 200)
+        SplitPane.init Vertical
     }
         ! []
 
@@ -101,7 +81,13 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    SplitPane.view Outer leftView (rightView model.inner) model.outer
+    div
+        [ style
+            [ ( "width", "800px" )
+            , ( "height", "600px" )
+            ]
+        ]
+        [ SplitPane.view Outer leftView (rightView model.inner) model.outer ]
 
 
 leftView : Html a
