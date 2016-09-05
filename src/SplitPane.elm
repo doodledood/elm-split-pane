@@ -128,7 +128,7 @@ type Model
 {-| Used to track SplitterMoves.
 -}
 type Msg
-    = SplitterClick Position
+    = SplitterClick DOMInfo
     | SplitterMove Position
     | SplitterLeftAlone Position
 
@@ -374,7 +374,12 @@ sizeToPx model size =
 
 
 -- UPDATE
-
+domInfoToPosition : DOMInfo -> Position
+domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight }=
+    case (x,y,touchX,touchY) of
+        (_, _, Just posX, Just posY) -> {x=posX, y=posY}
+        (Just posX, Just posY, _, _) -> {x=posX, y=posY}
+        _ -> {x = 0, y = 0}
 
 {-| Updates internal model.
 -}
@@ -385,7 +390,11 @@ update msg (Model model) =
     else
         case msg of
             SplitterClick pos ->
-                (Model { model | dragPosition = Just pos }, Just ResizeStarted)
+                (Model { model | 
+                        dragPosition = Just <| domInfoToPosition pos 
+                        , paneWidth = pos.parentWidth
+                        , paneHeight = pos.parentHeight
+                        }, Just ResizeStarted)
 
             SplitterLeftAlone _ ->
                 (Model { model | dragPosition = Nothing }, Just ResizeEnded)
@@ -400,9 +409,7 @@ update msg (Model model) =
                         let newModel = resize model curr (\{ x, y } -> y)
                         in (newModel, Just <| Resized <| splitterPosition newModel)
 
-resize :
-    { dragPosition : Maybe Position
-    , draggable : Bool
+resize : { dragPosition : Maybe Position , draggable : Bool
     , firstViewMinSize : Size
     , paneHeight : Px
     , paneWidth : Px
@@ -723,48 +730,51 @@ viewWithCustomSplitter (CustomSplitter customSplitterHtml) firstView secondView 
 
 onMouseDown : (Msg -> msg) -> Attribute msg
 onMouseDown toMsg  =
-    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << SplitterClick) Mouse.position
+    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << SplitterClick) domInfo 
 
 onTouchStart : (Msg -> msg) -> Attribute msg
 onTouchStart toMsg =
-    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterClick << touchToPosition) touchPosition
+    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterClick) domInfo
 
 onTouchEnd : (Msg -> msg) -> Attribute msg
 onTouchEnd toMsg =
-    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << touchToPosition) touchPosition
+    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << domInfoToPosition) domInfo
 
 onTouchCancel : (Msg -> msg) -> Attribute msg
 onTouchCancel toMsg =
-    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << touchToPosition) touchPosition
+    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << domInfoToPosition) domInfo
 
 onTouchMove : (Msg -> msg) -> Attribute msg
 onTouchMove toMsg =
-    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterMove << touchToPosition) touchPosition
+    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterMove << domInfoToPosition) domInfo
 
 
-touchToPosition : TouchPosition -> Position
-touchToPosition { x, y } =
-    { x = Maybe.withDefault 0 x 
-    , y = Maybe.withDefault 0 y 
-    }
 
 {-| The position of the touch relative to the whole document. So if you are
 scrolled down a bunch, you are still getting a coordinate relative to the
 very top left corner of the *whole* document.
 -}
-type alias TouchPosition =
-  { x : Maybe Int
+type alias DOMInfo = 
+  { x : Maybe Int 
   , y : Maybe Int
+  , touchX : Maybe Int
+  , touchY : Maybe Int
+  , parentWidth : Int
+  , parentHeight : Int
   }
 
 
 {-| The decoder used to extract a `Position` from a JavaScript touch event.
 -}
-touchPosition : Json.Decoder TouchPosition
-touchPosition =
-  Json.object2 TouchPosition 
+domInfo : Json.Decoder DOMInfo
+domInfo =
+  Json.object6 DOMInfo 
+    (Json.maybe ("clientX" := Json.int))
+    (Json.maybe ("clientY" := Json.int))
     (Json.maybe (at ["touches", "0", "clientX"] Json.int)) 
     (Json.maybe (at ["touches", "0", "clientY"] Json.int))
+    (at ["target", "parentElement", "clientWidth"] Json.int)
+    (at ["target", "parentElement", "clientHeight"] Json.int)
 
 
 
