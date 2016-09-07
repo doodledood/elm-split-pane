@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..))
+import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig)
 
 
 main : Program Never
@@ -49,9 +49,7 @@ update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
     case msg of
         PaneMsg paneMsg ->
-            case SplitPane.update paneMsg model.pane of
-                ( updatedPane, _ ) ->
-                    ( { model | pane = updatedPane }, Cmd.none )
+            ( { model | pane = SplitPane.update paneMsg model.pane }, Cmd.none )
 
 
 
@@ -66,7 +64,15 @@ view model =
             , ( "height", "600px" )
             ]
         ]
-        [ SplitPane.view PaneMsg firstView secondView model.pane ]
+        [ SplitPane.view viewConfig firstView secondView model.pane ]
+
+
+viewConfig : ViewConfig Msg
+viewConfig =
+    createViewConfig
+        { toMsg = PaneMsg
+        , customSplitter = Nothing
+        }
 
 
 firstView : Html a

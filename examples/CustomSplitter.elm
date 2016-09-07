@@ -5,7 +5,7 @@ import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
 import Html.Events exposing (onClick)
 import Maybe
-import SplitPane exposing (customSplitter, CustomSplitter, Msg)
+import SplitPane exposing (Orientation(..), CustomSplitter, createCustomSplitter, ViewConfig, createViewConfig)
 
 
 main : Program Never
@@ -40,10 +40,7 @@ type Msg
 init : ( Model, Cmd a )
 init =
     ( { pane =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
+            SplitPane.init Horizontal
       , message = Nothing
       }
     , Cmd.none
@@ -58,13 +55,10 @@ update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
     case msg of
         PaneMsg paneMsg ->
-            let
-                ( updatedPane, _ ) =
-                    SplitPane.update paneMsg model.pane
-            in
-                ( { model | pane = updatedPane }, Cmd.none )
+            ( { model | pane = SplitPane.update paneMsg model.pane }, Cmd.none )
+
         CustomSplitterButtonClick ->
-            ( { model | message = Just "clicked a button inside the custom splitter." }, Cmd.none)
+            ( { model | message = Just "clicked a button inside the custom splitter." }, Cmd.none )
 
 
 
@@ -74,14 +68,20 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView model.pane
+        [ div
+            [ style
+                [ ( "width", "800px" )
+                , ( "height", "600px" )
+                ]
+            ]
+            [ SplitPane.view viewConfig firstView secondView model.pane ]
         , text <| Maybe.withDefault "" model.message
         ]
 
 
 myCustomSplitter : CustomSplitter Msg
 myCustomSplitter =
-    customSplitter PaneMsg
+    createCustomSplitter PaneMsg
         { attributes =
             [ style
                 [ ( "width", "40px" )
@@ -103,6 +103,14 @@ firstView =
 secondView : Html a
 secondView =
     img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
+
+
+viewConfig : ViewConfig Msg
+viewConfig =
+    createViewConfig
+        { toMsg = PaneMsg
+        , customSplitter = Just myCustomSplitter
+        }
 
 
 

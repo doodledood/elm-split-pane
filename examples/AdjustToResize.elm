@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.App exposing (program)
-import SplitPane exposing (Px, WhatHappened(..))
+import SplitPane exposing (Orientation(..), Percentage, ViewConfig, UpdateConfig, createViewConfig, createUpdateConfig)
 
 
 main : Program Never
@@ -35,6 +35,7 @@ type alias Model =
 
 type Msg
     = PaneMsg SplitPane.Msg
+    | ResizeViews Percentage
 
 
 
@@ -44,10 +45,7 @@ type Msg
 init : ( Model, Cmd a )
 init =
     ( { pane =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
+            SplitPane.init Horizontal
       , leftViewSize = Medium
       , rightViewSize = Medium
       }
@@ -65,31 +63,44 @@ update msg model =
         PaneMsg paneMsg ->
             let
                 ( updatedPane, whatHappened ) =
-                    SplitPane.update paneMsg model.pane
+                    SplitPane.customUpdate updateConfig paneMsg model.pane
+
+                updatedModel =
+                    { model | pane = updatedPane }
             in
                 case whatHappened of
-                    Just (Resized newPosition) ->
-                        let
-                            ( leftViewNewSize, rightViewNewSize ) =
-                                chooseViewSizesBasedOnSplitterPosition newPosition
-                        in
-                            ( { model
-                                | pane = updatedPane
-                                , leftViewSize = leftViewNewSize
-                                , rightViewSize = rightViewNewSize
-                              }
-                            , Cmd.none
-                            )
+                    Nothing ->
+                        updatedModel ! []
 
-                    _ ->
-                        ( { model | pane = updatedPane }, Cmd.none )
+                    Just m ->
+                        update m updatedModel
+
+        ResizeViews newPosition ->
+            let
+                ( leftViewNewSize, rightViewNewSize ) =
+                    chooseViewSizesBasedOnSplitterPosition newPosition
+            in
+                { model
+                    | leftViewSize = leftViewNewSize
+                    , rightViewSize = rightViewNewSize
+                }
+                    ! []
 
 
-chooseViewSizesBasedOnSplitterPosition : Px -> ( ViewSize, ViewSize )
+updateConfig : UpdateConfig Msg
+updateConfig =
+    createUpdateConfig
+        { onResize = \p -> Just (ResizeViews p)
+        , onResizeStarted = Nothing
+        , onResizeEnded = Nothing
+        }
+
+
+chooseViewSizesBasedOnSplitterPosition : Percentage -> ( ViewSize, ViewSize )
 chooseViewSizesBasedOnSplitterPosition splitterPosition =
-    if splitterPosition < 200 then
+    if splitterPosition < 0.25 then
         ( Small, Large )
-    else if splitterPosition < 600 then
+    else if splitterPosition < 0.75 then
         ( Medium, Medium )
     else
         ( Large, Small )
@@ -105,7 +116,21 @@ view model =
         ( firstView, secondView ) =
             ( toView model.leftViewSize, toView model.rightViewSize )
     in
-        SplitPane.view PaneMsg firstView secondView model.pane
+        div
+            [ style
+                [ ( "width", "800px" )
+                , ( "height", "600px" )
+                ]
+            ]
+            [ SplitPane.view viewConfig firstView secondView model.pane ]
+
+
+viewConfig : ViewConfig Msg
+viewConfig =
+    createViewConfig
+        { toMsg = PaneMsg
+        , customSplitter = Nothing
+        }
 
 
 toView : ViewSize -> Html a

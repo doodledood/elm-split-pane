@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..))
+import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig, withResizeLimits)
 
 
 main : Program Never
@@ -39,6 +39,7 @@ init : ( Model, Cmd a )
 init =
     { outer =
         SplitPane.init Horizontal
+            |> withResizeLimits 0.2 0.8
     , inner =
         SplitPane.init Vertical
     }
@@ -53,26 +54,16 @@ update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
     case msg of
         Outer m ->
-            let
-                ( newOuterModel, _ ) =
-                    SplitPane.update m model.outer
-            in
-                ( { model
-                    | outer = newOuterModel
-                  }
-                , Cmd.none
-                )
+            { model
+                | outer = SplitPane.update m model.outer
+            }
+                ! []
 
         Inner m ->
-            let
-                ( newInnerModel, _ ) =
-                    SplitPane.update m model.inner
-            in
-                ( { model
-                    | inner = newInnerModel
-                  }
-                , Cmd.none
-                )
+            { model
+                | inner = SplitPane.update m model.inner
+            }
+                ! []
 
 
 
@@ -87,7 +78,7 @@ view model =
             , ( "height", "600px" )
             ]
         ]
-        [ SplitPane.view Outer leftView (rightView model.inner) model.outer ]
+        [ SplitPane.view outerViewConfig leftView (rightView model.inner) model.outer ]
 
 
 leftView : Html a
@@ -97,9 +88,25 @@ leftView =
 
 rightView : SplitPane.Model -> Html Msg
 rightView =
-    SplitPane.view Inner
+    SplitPane.view innerViewConfig
         (img [ src "https://pbs.twimg.com/profile_images/378800000532546226/dbe5f0727b69487016ffd67a6689e75a.jpeg" ] [])
         (img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] [])
+
+
+outerViewConfig : ViewConfig Msg
+outerViewConfig =
+    createViewConfig
+        { toMsg = Outer
+        , customSplitter = Nothing
+        }
+
+
+innerViewConfig : ViewConfig Msg
+innerViewConfig =
+    createViewConfig
+        { toMsg = Inner
+        , customSplitter = Nothing
+        }
 
 
 
