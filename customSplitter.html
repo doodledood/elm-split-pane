@@ -8674,352 +8674,188 @@ var _elm_lang$mouse$Mouse$subMap = F2(
 			});
 	});
 _elm_lang$core$Native_Platform.effectManagers['Mouse'] = {pkg: 'elm-lang/mouse', init: _elm_lang$mouse$Mouse$init, onEffects: _elm_lang$mouse$Mouse$onEffects, onSelfMsg: _elm_lang$mouse$Mouse$onSelfMsg, tag: 'sub', subMap: _elm_lang$mouse$Mouse$subMap};
-var _doodledood$elm_split_pane$SplitPane$touchToPosition = function (_p0) {
-	var _p1 = _p0;
-	return {
-		x: A2(_elm_lang$core$Maybe$withDefault, 0, _p1.x),
-		y: A2(_elm_lang$core$Maybe$withDefault, 0, _p1.y)
-	};
-};
-var _doodledood$elm_split_pane$SplitPane$defaultSplitterDetails = function (_p2) {
-	var _p3 = _p2;
-	var _p5 = _p3._0;
-	var baseStyles = _elm_lang$core$Native_List.fromArray(
-		[
-			{ctor: '_Tuple2', _0: 'width', _1: '100%'},
-			{ctor: '_Tuple2', _0: 'background', _1: '#000'},
-			{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
-			{ctor: '_Tuple2', _0: 'opacity', _1: '.2'},
-			{ctor: '_Tuple2', _0: 'zIndex', _1: '1'},
-			{ctor: '_Tuple2', _0: 'webkitUserSelect', _1: 'none'},
-			{ctor: '_Tuple2', _0: 'mozUserSelect', _1: 'none'},
-			{ctor: '_Tuple2', _0: 'userSelect', _1: 'none'},
-			{ctor: '_Tuple2', _0: 'backgroundClip', _1: 'padding-box'}
-		]);
-	var _p4 = _p5.orientation;
-	if (_p4.ctor === 'Horizontal') {
-		return {
-			attributes: _elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$html$Html_Attributes$style(
-					A2(
-						_elm_lang$core$Basics_ops['++'],
-						baseStyles,
-						A2(
-							_elm_lang$core$Basics_ops['++'],
-							_elm_lang$core$Native_List.fromArray(
-								[
-									{ctor: '_Tuple2', _0: 'width', _1: '11px'},
-									{ctor: '_Tuple2', _0: 'margin', _1: '0 -5px'},
-									{ctor: '_Tuple2', _0: 'borderLeft', _1: '5px solid rgba(255, 255, 255, 0)'},
-									{ctor: '_Tuple2', _0: 'borderRight', _1: '5px solid rgba(255, 255, 255, 0)'}
-								]),
-							_p5.draggable ? _elm_lang$core$Native_List.fromArray(
-								[
-									{ctor: '_Tuple2', _0: 'cursor', _1: 'col-resize'}
-								]) : _elm_lang$core$Native_List.fromArray(
-								[]))))
-				]),
-			children: _elm_lang$core$Native_List.fromArray(
-				[])
-		};
-	} else {
-		return {
-			attributes: _elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$html$Html_Attributes$style(
-					A2(
-						_elm_lang$core$Basics_ops['++'],
-						baseStyles,
-						A2(
-							_elm_lang$core$Basics_ops['++'],
-							_elm_lang$core$Native_List.fromArray(
-								[
-									{ctor: '_Tuple2', _0: 'height', _1: '11px'},
-									{ctor: '_Tuple2', _0: 'width', _1: '100%'},
-									{ctor: '_Tuple2', _0: 'margin', _1: '-5px 0'},
-									{ctor: '_Tuple2', _0: 'borderTop', _1: '5px solid rgba(255, 255, 255, 0)'},
-									{ctor: '_Tuple2', _0: 'borderBottom', _1: '5px solid rgba(255, 255, 255, 0)'}
-								]),
-							_p5.draggable ? _elm_lang$core$Native_List.fromArray(
-								[
-									{ctor: '_Tuple2', _0: 'cursor', _1: 'row-resize'}
-								]) : _elm_lang$core$Native_List.fromArray(
-								[]))))
-				]),
-			children: _elm_lang$core$Native_List.fromArray(
-				[])
-		};
-	}
-};
-var _doodledood$elm_split_pane$SplitPane$calculateMinAndMaxPositionsForSplitter = function (model) {
-	var totalLength = function () {
-		var _p6 = model.orientation;
-		if (_p6.ctor === 'Horizontal') {
-			return model.paneWidth;
-		} else {
-			return model.paneHeight;
-		}
-	}();
-	var minPx = function () {
-		var _p7 = model.firstViewMinSize;
-		if (_p7.ctor === 'Px') {
-			return _p7._0;
-		} else {
-			return _elm_lang$core$Basics$round(
-				_elm_lang$core$Basics$toFloat(totalLength) * _p7._0);
-		}
-	}();
-	var maxPx = function () {
-		var _p8 = model.secondViewMinSize;
-		if (_p8.ctor === 'Px') {
-			return totalLength - _p8._0;
-		} else {
-			return totalLength - _elm_lang$core$Basics$round(
-				_elm_lang$core$Basics$toFloat(totalLength) * _p8._0);
-		}
-	}();
-	return {ctor: '_Tuple2', _0: minPx, _1: maxPx};
-};
-var _doodledood$elm_split_pane$SplitPane$isInLimits = F2(
-	function (model, newSplitterPosition) {
-		var _p9 = _doodledood$elm_split_pane$SplitPane$calculateMinAndMaxPositionsForSplitter(model);
-		var minPx = _p9._0;
-		var maxPx = _p9._1;
-		return (_elm_lang$core$Native_Utils.cmp(newSplitterPosition, minPx) > -1) && (_elm_lang$core$Native_Utils.cmp(newSplitterPosition, maxPx) < 1);
-	});
-var _doodledood$elm_split_pane$SplitPane$sizeToPx = F2(
-	function (model, size) {
-		var _p10 = size;
-		if (_p10.ctor === 'Px') {
-			return _p10._0;
-		} else {
-			var _p12 = _p10._0;
-			var _p11 = model.orientation;
-			if (_p11.ctor === 'Horizontal') {
-				return _elm_lang$core$Basics$round(
-					_p12 * _elm_lang$core$Basics$toFloat(model.paneWidth));
-			} else {
-				return _elm_lang$core$Basics$round(
-					_p12 * _elm_lang$core$Basics$toFloat(model.paneHeight));
-			}
-		}
-	});
-var _doodledood$elm_split_pane$SplitPane$capSplitterPosition = F2(
-	function (splitterPosition, model) {
-		var pxSize = A2(_doodledood$elm_split_pane$SplitPane$sizeToPx, model, splitterPosition);
-		var cappedPosition = function () {
-			var _p13 = model.orientation;
-			if (_p13.ctor === 'Horizontal') {
-				return A2(
-					_elm_lang$core$Basics$min,
-					A2(_elm_lang$core$Basics$max, pxSize, 0),
-					model.paneWidth);
-			} else {
-				return A2(
-					_elm_lang$core$Basics$min,
-					A2(_elm_lang$core$Basics$max, pxSize, 0),
-					model.paneHeight);
-			}
-		}();
-		return cappedPosition;
-	});
-var _doodledood$elm_split_pane$SplitPane$orientation = function (_p14) {
-	var _p15 = _p14;
-	return _p15._0.orientation;
-};
-var _doodledood$elm_split_pane$SplitPane$height = function (_p16) {
-	var _p17 = _p16;
-	return _p17._0.paneHeight;
-};
-var _doodledood$elm_split_pane$SplitPane$width = function (_p18) {
-	var _p19 = _p18;
-	return _p19._0.paneWidth;
-};
-var _doodledood$elm_split_pane$SplitPane$splitterPosition = function (_p20) {
-	var _p21 = _p20;
-	return _p21._0.splitterPosition;
-};
-var _doodledood$elm_split_pane$SplitPane$pxToCss = function (px) {
-	return A2(
-		_elm_lang$core$Basics_ops['++'],
-		_elm_lang$core$Basics$toString(px),
-		'px');
-};
-var _doodledood$elm_split_pane$SplitPane$sizeToCss = function (size) {
-	var _p22 = size;
-	if (_p22.ctor === 'Px') {
-		return _doodledood$elm_split_pane$SplitPane$pxToCss(_p22._0);
-	} else {
-		return A2(
+var _doodledood$elm_split_pane$Styles$baseDefaultSplitterStyles = _elm_lang$core$Native_List.fromArray(
+	[
+		{ctor: '_Tuple2', _0: 'width', _1: '100%'},
+		{ctor: '_Tuple2', _0: 'background', _1: '#000'},
+		{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
+		{ctor: '_Tuple2', _0: 'opacity', _1: '.2'},
+		{ctor: '_Tuple2', _0: 'zIndex', _1: '1'},
+		{ctor: '_Tuple2', _0: 'webkitUserSelect', _1: 'none'},
+		{ctor: '_Tuple2', _0: 'mozUserSelect', _1: 'none'},
+		{ctor: '_Tuple2', _0: 'userSelect', _1: 'none'},
+		{ctor: '_Tuple2', _0: 'backgroundClip', _1: 'padding-box'}
+	]);
+var _doodledood$elm_split_pane$Styles$defaultHorizontalSplitterStyle = function (isDraggable) {
+	return _elm_lang$html$Html_Attributes$style(
+		A2(
 			_elm_lang$core$Basics_ops['++'],
-			_elm_lang$core$Basics$toString(_p22._0 * 100),
-			'%');
-	}
+			_doodledood$elm_split_pane$Styles$baseDefaultSplitterStyles,
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				_elm_lang$core$Native_List.fromArray(
+					[
+						{ctor: '_Tuple2', _0: 'width', _1: '11px'},
+						{ctor: '_Tuple2', _0: 'height', _1: '100%'},
+						{ctor: '_Tuple2', _0: 'margin', _1: '0 -5px'},
+						{ctor: '_Tuple2', _0: 'borderLeft', _1: '5px solid rgba(255, 255, 255, 0)'},
+						{ctor: '_Tuple2', _0: 'borderRight', _1: '5px solid rgba(255, 255, 255, 0)'}
+					]),
+				isDraggable ? _elm_lang$core$Native_List.fromArray(
+					[
+						{ctor: '_Tuple2', _0: 'cursor', _1: 'col-resize'}
+					]) : _elm_lang$core$Native_List.fromArray(
+					[]))));
 };
-var _doodledood$elm_split_pane$SplitPane$viewWithCustomSplitter = F4(
-	function (_p24, firstView, secondView, _p23) {
-		var _p25 = _p24;
-		var _p29 = _p25._0;
-		var _p26 = _p23;
-		var _p28 = _p26._0;
-		var _p27 = _p28.orientation;
-		if (_p27.ctor === 'Horizontal') {
-			return A2(
-				_elm_lang$html$Html$div,
+var _doodledood$elm_split_pane$Styles$defaultVerticalSplitterStyle = function (isDraggable) {
+	return _elm_lang$html$Html_Attributes$style(
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			_doodledood$elm_split_pane$Styles$baseDefaultSplitterStyles,
+			A2(
+				_elm_lang$core$Basics_ops['++'],
 				_elm_lang$core$Native_List.fromArray(
 					[
-						_elm_lang$html$Html_Attributes$style(
-						_elm_lang$core$Native_List.fromArray(
-							[
-								{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-								{ctor: '_Tuple2', _0: 'display', _1: 'flex'},
-								{ctor: '_Tuple2', _0: 'flex', _1: '1 1 0%'},
-								{ctor: '_Tuple2', _0: 'flexDirection', _1: 'row'},
-								{
-								ctor: '_Tuple2',
-								_0: 'width',
-								_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneWidth)
-							},
-								{
-								ctor: '_Tuple2',
-								_0: 'height',
-								_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneHeight)
-							},
-								{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'}
-							]))
+						{ctor: '_Tuple2', _0: 'height', _1: '11px'},
+						{ctor: '_Tuple2', _0: 'width', _1: '100%'},
+						{ctor: '_Tuple2', _0: 'margin', _1: '-5px 0'},
+						{ctor: '_Tuple2', _0: 'borderTop', _1: '5px solid rgba(255, 255, 255, 0)'},
+						{ctor: '_Tuple2', _0: 'borderBottom', _1: '5px solid rgba(255, 255, 255, 0)'}
 					]),
-				_elm_lang$core$Native_List.fromArray(
+				isDraggable ? _elm_lang$core$Native_List.fromArray(
 					[
-						A2(
-						_elm_lang$html$Html$div,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$style(
-								_elm_lang$core$Native_List.fromArray(
-									[
-										{
-										ctor: '_Tuple2',
-										_0: 'width',
-										_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.splitterPosition)
-									},
-										{
-										ctor: '_Tuple2',
-										_0: 'minWidth',
-										_1: _doodledood$elm_split_pane$SplitPane$sizeToCss(_p28.firstViewMinSize)
-									},
-										{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-										{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
-										{ctor: '_Tuple2', _0: 'position', _1: 'relative'}
-									]))
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[firstView])),
-						_p29,
-						A2(
-						_elm_lang$html$Html$div,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$style(
-								_elm_lang$core$Native_List.fromArray(
-									[
-										{
-										ctor: '_Tuple2',
-										_0: 'width',
-										_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneWidth - _p28.splitterPosition)
-									},
-										{
-										ctor: '_Tuple2',
-										_0: 'minWidth',
-										_1: _doodledood$elm_split_pane$SplitPane$sizeToCss(_p28.secondViewMinSize)
-									},
-										{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-										{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
-										{ctor: '_Tuple2', _0: 'position', _1: 'relative'}
-									]))
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[secondView]))
-					]));
+						{ctor: '_Tuple2', _0: 'cursor', _1: 'row-resize'}
+					]) : _elm_lang$core$Native_List.fromArray(
+					[]))));
+};
+var _doodledood$elm_split_pane$Styles$childViewStyle = function (fraction) {
+	return _elm_lang$html$Html_Attributes$style(
+		_elm_lang$core$Native_List.fromArray(
+			[
+				{
+				ctor: '_Tuple2',
+				_0: 'flex',
+				_1: _elm_lang$core$Basics$toString(fraction)
+			},
+				{ctor: '_Tuple2', _0: 'width', _1: '100%'},
+				{ctor: '_Tuple2', _0: 'height', _1: '100%'},
+				{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
+				{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
+				{ctor: '_Tuple2', _0: 'position', _1: 'relative'}
+			]));
+};
+var _doodledood$elm_split_pane$Styles$paneContainerStyle = function (isHorizontal) {
+	return _elm_lang$html$Html_Attributes$style(
+		_elm_lang$core$Native_List.fromArray(
+			[
+				{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
+				{ctor: '_Tuple2', _0: 'display', _1: 'flex'},
+				{
+				ctor: '_Tuple2',
+				_0: 'flexDirection',
+				_1: isHorizontal ? 'row' : 'column'
+			},
+				{ctor: '_Tuple2', _0: 'justifyContent', _1: 'center'},
+				{ctor: '_Tuple2', _0: 'alignItems', _1: 'center'},
+				{ctor: '_Tuple2', _0: 'width', _1: '100%'},
+				{ctor: '_Tuple2', _0: 'height', _1: '100%'},
+				{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'}
+			]));
+};
+var _doodledood$elm_split_pane$SplitPane$createDefaultSplitterDetails = F2(
+	function (orientation, draggable) {
+		var _p0 = orientation;
+		if (_p0.ctor === 'Horizontal') {
+			return {
+				attributes: _elm_lang$core$Native_List.fromArray(
+					[
+						_doodledood$elm_split_pane$Styles$defaultHorizontalSplitterStyle(draggable)
+					]),
+				children: _elm_lang$core$Native_List.fromArray(
+					[])
+			};
 		} else {
-			return A2(
-				_elm_lang$html$Html$div,
-				_elm_lang$core$Native_List.fromArray(
+			return {
+				attributes: _elm_lang$core$Native_List.fromArray(
 					[
-						_elm_lang$html$Html_Attributes$style(
-						_elm_lang$core$Native_List.fromArray(
-							[
-								{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-								{ctor: '_Tuple2', _0: 'display', _1: 'flex'},
-								{ctor: '_Tuple2', _0: 'flex', _1: '1 1 0%'},
-								{ctor: '_Tuple2', _0: 'flexDirection', _1: 'column'},
-								{
-								ctor: '_Tuple2',
-								_0: 'width',
-								_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneWidth)
-							},
-								{
-								ctor: '_Tuple2',
-								_0: 'height',
-								_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneHeight)
-							},
-								{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'}
-							]))
+						_doodledood$elm_split_pane$Styles$defaultVerticalSplitterStyle(draggable)
 					]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						A2(
-						_elm_lang$html$Html$div,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$style(
-								_elm_lang$core$Native_List.fromArray(
-									[
-										{
-										ctor: '_Tuple2',
-										_0: 'height',
-										_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.splitterPosition)
-									},
-										{
-										ctor: '_Tuple2',
-										_0: 'minHeight',
-										_1: _doodledood$elm_split_pane$SplitPane$sizeToCss(_p28.firstViewMinSize)
-									},
-										{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-										{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
-										{ctor: '_Tuple2', _0: 'position', _1: 'relative'}
-									]))
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[firstView])),
-						_p29,
-						A2(
-						_elm_lang$html$Html$div,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$style(
-								_elm_lang$core$Native_List.fromArray(
-									[
-										{
-										ctor: '_Tuple2',
-										_0: 'height',
-										_1: _doodledood$elm_split_pane$SplitPane$pxToCss(_p28.paneHeight - _p28.splitterPosition)
-									},
-										{
-										ctor: '_Tuple2',
-										_0: 'minHeight',
-										_1: _doodledood$elm_split_pane$SplitPane$sizeToCss(_p28.secondViewMinSize)
-									},
-										{ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-										{ctor: '_Tuple2', _0: 'boxSizing', _1: 'border-box'},
-										{ctor: '_Tuple2', _0: 'position', _1: 'relative'}
-									]))
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[secondView]))
-					]));
+				children: _elm_lang$core$Native_List.fromArray(
+					[])
+			};
 		}
 	});
+var _doodledood$elm_split_pane$SplitPane$resize = F8(
+	function (orientation, splitterPosition, newPosition, prevPosition, paneWidth, paneHeight, minLimit, maxLimit) {
+		var _p1 = {ctor: '_Tuple2', _0: paneWidth, _1: paneHeight};
+		if ((_p1._0.ctor === 'Just') && (_p1._1.ctor === 'Just')) {
+			var _p4 = _p1._0._0;
+			var _p3 = _p1._1._0;
+			var _p2 = orientation;
+			if (_p2.ctor === 'Horizontal') {
+				var newSplitterPosition = splitterPosition + (_elm_lang$core$Basics$toFloat(newPosition.x - prevPosition.x) / _elm_lang$core$Basics$toFloat(_p4));
+				return (_elm_lang$core$Native_Utils.cmp(newSplitterPosition, minLimit) < 0) ? {
+					ctor: '_Tuple2',
+					_0: minLimit,
+					_1: {
+						x: _elm_lang$core$Basics$round(
+							_elm_lang$core$Basics$toFloat(_p4) * minLimit),
+						y: newPosition.y
+					}
+				} : ((_elm_lang$core$Native_Utils.cmp(newSplitterPosition, maxLimit) > 0) ? {
+					ctor: '_Tuple2',
+					_0: maxLimit,
+					_1: {
+						x: _elm_lang$core$Basics$round(
+							_elm_lang$core$Basics$toFloat(_p4) * maxLimit),
+						y: newPosition.y
+					}
+				} : {ctor: '_Tuple2', _0: newSplitterPosition, _1: newPosition});
+			} else {
+				var newSplitterPosition = splitterPosition + (_elm_lang$core$Basics$toFloat(newPosition.y - prevPosition.y) / _elm_lang$core$Basics$toFloat(_p3));
+				return (_elm_lang$core$Native_Utils.cmp(newSplitterPosition, minLimit) < 0) ? {
+					ctor: '_Tuple2',
+					_0: minLimit,
+					_1: {
+						x: newPosition.x,
+						y: _elm_lang$core$Basics$round(
+							_elm_lang$core$Basics$toFloat(_p3) * minLimit)
+					}
+				} : ((_elm_lang$core$Native_Utils.cmp(newSplitterPosition, maxLimit) > 0) ? {
+					ctor: '_Tuple2',
+					_0: maxLimit,
+					_1: {
+						x: newPosition.x,
+						y: _elm_lang$core$Basics$round(
+							_elm_lang$core$Basics$toFloat(_p3) * maxLimit)
+					}
+				} : {ctor: '_Tuple2', _0: newSplitterPosition, _1: newPosition});
+			}
+		} else {
+			return {ctor: '_Tuple2', _0: splitterPosition, _1: newPosition};
+		}
+	});
+var _doodledood$elm_split_pane$SplitPane$domInfoToPosition = function (_p5) {
+	var _p6 = _p5;
+	var _p7 = {ctor: '_Tuple4', _0: _p6.x, _1: _p6.y, _2: _p6.touchX, _3: _p6.touchY};
+	_v4_2:
+	do {
+		if (_p7.ctor === '_Tuple4') {
+			if ((_p7._2.ctor === 'Just') && (_p7._3.ctor === 'Just')) {
+				return {x: _p7._2._0, y: _p7._3._0};
+			} else {
+				if ((_p7._0.ctor === 'Just') && (_p7._1.ctor === 'Just')) {
+					return {x: _p7._0._0, y: _p7._1._0};
+				} else {
+					break _v4_2;
+				}
+			}
+		} else {
+			break _v4_2;
+		}
+	} while(false);
+	return {x: 0, y: 0};
+};
 var _doodledood$elm_split_pane$SplitPane$Position = F2(
 	function (a, b) {
 		return {x: a, y: b};
@@ -9028,13 +8864,17 @@ var _doodledood$elm_split_pane$SplitPane$HtmlDetails = F2(
 	function (a, b) {
 		return {attributes: a, children: b};
 	});
-var _doodledood$elm_split_pane$SplitPane$TouchPosition = F2(
-	function (a, b) {
-		return {x: a, y: b};
+var _doodledood$elm_split_pane$SplitPane$DOMInfo = F6(
+	function (a, b, c, d, e, f) {
+		return {x: a, y: b, touchX: c, touchY: d, parentWidth: e, parentHeight: f};
 	});
-var _doodledood$elm_split_pane$SplitPane$touchPosition = A3(
-	_elm_lang$core$Json_Decode$object2,
-	_doodledood$elm_split_pane$SplitPane$TouchPosition,
+var _doodledood$elm_split_pane$SplitPane$domInfo = A7(
+	_elm_lang$core$Json_Decode$object6,
+	_doodledood$elm_split_pane$SplitPane$DOMInfo,
+	_elm_lang$core$Json_Decode$maybe(
+		A2(_elm_lang$core$Json_Decode_ops[':='], 'clientX', _elm_lang$core$Json_Decode$int)),
+	_elm_lang$core$Json_Decode$maybe(
+		A2(_elm_lang$core$Json_Decode_ops[':='], 'clientY', _elm_lang$core$Json_Decode$int)),
 	_elm_lang$core$Json_Decode$maybe(
 		A2(
 			_elm_lang$core$Json_Decode$at,
@@ -9046,120 +8886,140 @@ var _doodledood$elm_split_pane$SplitPane$touchPosition = A3(
 			_elm_lang$core$Json_Decode$at,
 			_elm_lang$core$Native_List.fromArray(
 				['touches', '0', 'clientY']),
-			_elm_lang$core$Json_Decode$int)));
-var _doodledood$elm_split_pane$SplitPane$Percentage = function (a) {
-	return {ctor: 'Percentage', _0: a};
-};
-var _doodledood$elm_split_pane$SplitPane$Px = function (a) {
-	return {ctor: 'Px', _0: a};
-};
+			_elm_lang$core$Json_Decode$int)),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		_elm_lang$core$Native_List.fromArray(
+			['target', 'parentElement', 'clientWidth']),
+		_elm_lang$core$Json_Decode$int),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		_elm_lang$core$Native_List.fromArray(
+			['target', 'parentElement', 'clientHeight']),
+		_elm_lang$core$Json_Decode$int));
 var _doodledood$elm_split_pane$SplitPane$Vertical = {ctor: 'Vertical'};
 var _doodledood$elm_split_pane$SplitPane$Horizontal = {ctor: 'Horizontal'};
-var _doodledood$elm_split_pane$SplitPane$Model = function (a) {
-	return {ctor: 'Model', _0: a};
+var _doodledood$elm_split_pane$SplitPane$State = function (a) {
+	return {ctor: 'State', _0: a};
 };
-var _doodledood$elm_split_pane$SplitPane$init = function (_p30) {
-	var _p31 = _p30;
-	var _p32 = _p31.paneWidth;
-	return _doodledood$elm_split_pane$SplitPane$Model(
-		{
-			splitterPosition: (_p32 / 2) | 0,
-			draggable: true,
-			firstViewMinSize: _doodledood$elm_split_pane$SplitPane$Px(0),
-			secondViewMinSize: _doodledood$elm_split_pane$SplitPane$Px(0),
-			paneWidth: _p32,
-			paneHeight: _p31.paneHeight,
-			dragPosition: _elm_lang$core$Maybe$Nothing,
-			orientation: _doodledood$elm_split_pane$SplitPane$Horizontal
-		});
-};
-var _doodledood$elm_split_pane$SplitPane$startAt = F2(
-	function (startingSplitterPosition, _p33) {
-		var _p34 = _p33;
-		var _p35 = _p34._0;
-		var cappedPosition = A2(_doodledood$elm_split_pane$SplitPane$capSplitterPosition, startingSplitterPosition, _p35);
-		return _doodledood$elm_split_pane$SplitPane$Model(
-			_elm_lang$core$Native_Utils.update(
-				_p35,
-				{splitterPosition: cappedPosition}));
-	});
-var _doodledood$elm_split_pane$SplitPane$moveSplitterTo = F2(
-	function (size, _p36) {
-		var _p37 = _p36;
-		var _p38 = _p37._0;
-		var pxSize = A2(_doodledood$elm_split_pane$SplitPane$sizeToPx, _p38, size);
-		return _doodledood$elm_split_pane$SplitPane$Model(
-			_elm_lang$core$Native_Utils.update(
-				_p38,
-				{splitterPosition: pxSize}));
-	});
 var _doodledood$elm_split_pane$SplitPane$draggable = F2(
-	function (isDraggable, _p39) {
-		var _p40 = _p39;
-		return _doodledood$elm_split_pane$SplitPane$Model(
+	function (isDraggable, _p8) {
+		var _p9 = _p8;
+		return _doodledood$elm_split_pane$SplitPane$State(
 			_elm_lang$core$Native_Utils.update(
-				_p40._0,
+				_p9._0,
 				{draggable: isDraggable}));
 	});
-var _doodledood$elm_split_pane$SplitPane$withFirstViewMinSize = F2(
-	function (size, _p41) {
-		var _p42 = _p41;
-		return _doodledood$elm_split_pane$SplitPane$Model(
+var _doodledood$elm_split_pane$SplitPane$orientation = F2(
+	function (o, _p10) {
+		var _p11 = _p10;
+		return _doodledood$elm_split_pane$SplitPane$State(
 			_elm_lang$core$Native_Utils.update(
-				_p42._0,
-				{firstViewMinSize: size}));
-	});
-var _doodledood$elm_split_pane$SplitPane$withSecondViewMinSize = F2(
-	function (size, _p43) {
-		var _p44 = _p43;
-		return _doodledood$elm_split_pane$SplitPane$Model(
-			_elm_lang$core$Native_Utils.update(
-				_p44._0,
-				{secondViewMinSize: size}));
-	});
-var _doodledood$elm_split_pane$SplitPane$changeOrientationTo = F2(
-	function (o, _p45) {
-		var _p46 = _p45;
-		return _doodledood$elm_split_pane$SplitPane$Model(
-			_elm_lang$core$Native_Utils.update(
-				_p46._0,
+				_p11._0,
 				{orientation: o}));
 	});
-var _doodledood$elm_split_pane$SplitPane$changeWidth = F2(
-	function (px, _p47) {
-		var _p48 = _p47;
-		return _doodledood$elm_split_pane$SplitPane$Model(
+var _doodledood$elm_split_pane$SplitPane$withSplitterAt = F2(
+	function (newPosition, _p12) {
+		var _p13 = _p12;
+		return _doodledood$elm_split_pane$SplitPane$State(
 			_elm_lang$core$Native_Utils.update(
-				_p48._0,
-				{paneWidth: px}));
+				_p13._0,
+				{
+					splitterPosition: A2(
+						_elm_lang$core$Basics$min,
+						1.0,
+						A2(_elm_lang$core$Basics$max, newPosition, 0.0))
+				}));
 	});
-var _doodledood$elm_split_pane$SplitPane$changeHeight = F2(
-	function (px, _p49) {
-		var _p50 = _p49;
-		return _doodledood$elm_split_pane$SplitPane$Model(
+var _doodledood$elm_split_pane$SplitPane$withResizeLimits = F3(
+	function (minLimit, maxLimit, _p14) {
+		var _p15 = _p14;
+		return _doodledood$elm_split_pane$SplitPane$State(
 			_elm_lang$core$Native_Utils.update(
-				_p50._0,
-				{paneHeight: px}));
+				_p15._0,
+				{
+					resizeLimits: {ctor: '_Tuple2', _0: minLimit, _1: maxLimit}
+				}));
 	});
-var _doodledood$elm_split_pane$SplitPane$resize = F3(
-	function (model, newDragPosition, diffProp) {
-		var _p51 = model.dragPosition;
-		if (_p51.ctor === 'Nothing') {
-			return _doodledood$elm_split_pane$SplitPane$Model(model);
+var _doodledood$elm_split_pane$SplitPane$init = function (orientation) {
+	return _doodledood$elm_split_pane$SplitPane$State(
+		{
+			dragPosition: _elm_lang$core$Maybe$Nothing,
+			draggable: true,
+			orientation: orientation,
+			splitterPosition: 0.5,
+			resizeLimits: {ctor: '_Tuple2', _0: 0.0, _1: 1.0},
+			paneWidth: _elm_lang$core$Maybe$Nothing,
+			paneHeight: _elm_lang$core$Maybe$Nothing
+		});
+};
+var _doodledood$elm_split_pane$SplitPane$customUpdate = F3(
+	function (_p17, msg, _p16) {
+		var _p18 = _p17;
+		var _p26 = _p18._0;
+		var _p19 = _p16;
+		var _p25 = _p19._0;
+		if (_elm_lang$core$Basics$not(_p25.draggable)) {
+			return {
+				ctor: '_Tuple2',
+				_0: _doodledood$elm_split_pane$SplitPane$State(_p25),
+				_1: _elm_lang$core$Maybe$Nothing
+			};
 		} else {
-			var calculateDiff = F2(
-				function (x, y) {
-					return diffProp(x) - diffProp(y);
-				});
-			var diff = A2(calculateDiff, newDragPosition, _p51._0);
-			var newSplitterPosition = model.splitterPosition + diff;
-			return A2(_doodledood$elm_split_pane$SplitPane$isInLimits, model, newSplitterPosition) ? _doodledood$elm_split_pane$SplitPane$Model(
-				_elm_lang$core$Native_Utils.update(
-					model,
-					{
-						splitterPosition: newSplitterPosition,
-						dragPosition: _elm_lang$core$Maybe$Just(newDragPosition)
-					})) : _doodledood$elm_split_pane$SplitPane$Model(model);
+			var _p20 = msg;
+			switch (_p20.ctor) {
+				case 'SplitterClick':
+					var _p21 = _p20._0;
+					return {
+						ctor: '_Tuple2',
+						_0: _doodledood$elm_split_pane$SplitPane$State(
+							_elm_lang$core$Native_Utils.update(
+								_p25,
+								{
+									dragPosition: _elm_lang$core$Maybe$Just(
+										_doodledood$elm_split_pane$SplitPane$domInfoToPosition(_p21)),
+									paneWidth: _elm_lang$core$Maybe$Just(_p21.parentWidth),
+									paneHeight: _elm_lang$core$Maybe$Just(_p21.parentHeight)
+								})),
+						_1: _p26.onResizeStarted
+					};
+				case 'SplitterLeftAlone':
+					return {
+						ctor: '_Tuple2',
+						_0: _doodledood$elm_split_pane$SplitPane$State(
+							_elm_lang$core$Native_Utils.update(
+								_p25,
+								{dragPosition: _elm_lang$core$Maybe$Nothing})),
+						_1: _p26.onResizeEnded
+					};
+				default:
+					var _p22 = _p25.dragPosition;
+					if (_p22.ctor === 'Nothing') {
+						return {
+							ctor: '_Tuple2',
+							_0: _doodledood$elm_split_pane$SplitPane$State(_p25),
+							_1: _elm_lang$core$Maybe$Nothing
+						};
+					} else {
+						var _p23 = _p25.resizeLimits;
+						var minLimit = _p23._0;
+						var maxLimit = _p23._1;
+						var _p24 = A8(_doodledood$elm_split_pane$SplitPane$resize, _p25.orientation, _p25.splitterPosition, _p20._0, _p22._0, _p25.paneWidth, _p25.paneHeight, minLimit, maxLimit);
+						var newSplitterPosition = _p24._0;
+						var newPosition = _p24._1;
+						return {
+							ctor: '_Tuple2',
+							_0: _doodledood$elm_split_pane$SplitPane$State(
+								_elm_lang$core$Native_Utils.update(
+									_p25,
+									{
+										dragPosition: _elm_lang$core$Maybe$Just(newPosition),
+										splitterPosition: newSplitterPosition
+									})),
+							_1: _p26.onResize(newSplitterPosition)
+						};
+					}
+			}
 		}
 	});
 var _doodledood$elm_split_pane$SplitPane$SplitterLeftAlone = function (a) {
@@ -9172,12 +9032,12 @@ var _doodledood$elm_split_pane$SplitPane$onTouchEnd = function (toMsg) {
 		{preventDefault: true, stopPropagation: true},
 		A2(
 			_elm_lang$core$Json_Decode$map,
-			function (_p52) {
+			function (_p27) {
 				return toMsg(
 					_doodledood$elm_split_pane$SplitPane$SplitterLeftAlone(
-						_doodledood$elm_split_pane$SplitPane$touchToPosition(_p52)));
+						_doodledood$elm_split_pane$SplitPane$domInfoToPosition(_p27)));
 			},
-			_doodledood$elm_split_pane$SplitPane$touchPosition));
+			_doodledood$elm_split_pane$SplitPane$domInfo));
 };
 var _doodledood$elm_split_pane$SplitPane$onTouchCancel = function (toMsg) {
 	return A3(
@@ -9186,12 +9046,12 @@ var _doodledood$elm_split_pane$SplitPane$onTouchCancel = function (toMsg) {
 		{preventDefault: true, stopPropagation: true},
 		A2(
 			_elm_lang$core$Json_Decode$map,
-			function (_p53) {
+			function (_p28) {
 				return toMsg(
 					_doodledood$elm_split_pane$SplitPane$SplitterLeftAlone(
-						_doodledood$elm_split_pane$SplitPane$touchToPosition(_p53)));
+						_doodledood$elm_split_pane$SplitPane$domInfoToPosition(_p28)));
 			},
-			_doodledood$elm_split_pane$SplitPane$touchPosition));
+			_doodledood$elm_split_pane$SplitPane$domInfo));
 };
 var _doodledood$elm_split_pane$SplitPane$SplitterMove = function (a) {
 	return {ctor: 'SplitterMove', _0: a};
@@ -9203,21 +9063,21 @@ var _doodledood$elm_split_pane$SplitPane$onTouchMove = function (toMsg) {
 		{preventDefault: true, stopPropagation: true},
 		A2(
 			_elm_lang$core$Json_Decode$map,
-			function (_p54) {
+			function (_p29) {
 				return toMsg(
 					_doodledood$elm_split_pane$SplitPane$SplitterMove(
-						_doodledood$elm_split_pane$SplitPane$touchToPosition(_p54)));
+						_doodledood$elm_split_pane$SplitPane$domInfoToPosition(_p29)));
 			},
-			_doodledood$elm_split_pane$SplitPane$touchPosition));
+			_doodledood$elm_split_pane$SplitPane$domInfo));
 };
-var _doodledood$elm_split_pane$SplitPane$subscriptions = function (_p55) {
-	var _p56 = _p55;
-	var _p58 = _p56._0;
-	if (_elm_lang$core$Basics$not(_p58.draggable)) {
+var _doodledood$elm_split_pane$SplitPane$subscriptions = function (_p30) {
+	var _p31 = _p30;
+	var _p33 = _p31._0;
+	if (_elm_lang$core$Basics$not(_p33.draggable)) {
 		return _elm_lang$core$Platform_Sub$none;
 	} else {
-		var _p57 = _p58.dragPosition;
-		if (_p57.ctor === 'Just') {
+		var _p32 = _p33.dragPosition;
+		if (_p32.ctor === 'Just') {
 			return _elm_lang$core$Platform_Sub$batch(
 				_elm_lang$core$Native_List.fromArray(
 					[
@@ -9239,11 +9099,11 @@ var _doodledood$elm_split_pane$SplitPane$onMouseDown = function (toMsg) {
 		{preventDefault: true, stopPropagation: false},
 		A2(
 			_elm_lang$core$Json_Decode$map,
-			function (_p59) {
+			function (_p34) {
 				return toMsg(
-					_doodledood$elm_split_pane$SplitPane$SplitterClick(_p59));
+					_doodledood$elm_split_pane$SplitPane$SplitterClick(_p34));
 			},
-			_elm_lang$mouse$Mouse$position));
+			_doodledood$elm_split_pane$SplitPane$domInfo));
 };
 var _doodledood$elm_split_pane$SplitPane$onTouchStart = function (toMsg) {
 	return A3(
@@ -9252,94 +9112,39 @@ var _doodledood$elm_split_pane$SplitPane$onTouchStart = function (toMsg) {
 		{preventDefault: true, stopPropagation: true},
 		A2(
 			_elm_lang$core$Json_Decode$map,
-			function (_p60) {
+			function (_p35) {
 				return toMsg(
-					_doodledood$elm_split_pane$SplitPane$SplitterClick(
-						_doodledood$elm_split_pane$SplitPane$touchToPosition(_p60)));
+					_doodledood$elm_split_pane$SplitPane$SplitterClick(_p35));
 			},
-			_doodledood$elm_split_pane$SplitPane$touchPosition));
+			_doodledood$elm_split_pane$SplitPane$domInfo));
 };
-var _doodledood$elm_split_pane$SplitPane$ResizeEnded = {ctor: 'ResizeEnded'};
-var _doodledood$elm_split_pane$SplitPane$Resized = function (a) {
-	return {ctor: 'Resized', _0: a};
+var _doodledood$elm_split_pane$SplitPane$UpdateConfig = function (a) {
+	return {ctor: 'UpdateConfig', _0: a};
 };
-var _doodledood$elm_split_pane$SplitPane$ResizeStarted = {ctor: 'ResizeStarted'};
+var _doodledood$elm_split_pane$SplitPane$createUpdateConfig = function (config) {
+	return _doodledood$elm_split_pane$SplitPane$UpdateConfig(config);
+};
 var _doodledood$elm_split_pane$SplitPane$update = F2(
-	function (msg, _p61) {
-		var _p62 = _p61;
-		var _p70 = _p62._0;
-		if (_elm_lang$core$Basics$not(_p70.draggable)) {
-			return {
-				ctor: '_Tuple2',
-				_0: _doodledood$elm_split_pane$SplitPane$Model(_p70),
-				_1: _elm_lang$core$Maybe$Nothing
-			};
-		} else {
-			var _p63 = msg;
-			switch (_p63.ctor) {
-				case 'SplitterClick':
-					return {
-						ctor: '_Tuple2',
-						_0: _doodledood$elm_split_pane$SplitPane$Model(
-							_elm_lang$core$Native_Utils.update(
-								_p70,
-								{
-									dragPosition: _elm_lang$core$Maybe$Just(_p63._0)
-								})),
-						_1: _elm_lang$core$Maybe$Just(_doodledood$elm_split_pane$SplitPane$ResizeStarted)
-					};
-				case 'SplitterLeftAlone':
-					return {
-						ctor: '_Tuple2',
-						_0: _doodledood$elm_split_pane$SplitPane$Model(
-							_elm_lang$core$Native_Utils.update(
-								_p70,
-								{dragPosition: _elm_lang$core$Maybe$Nothing})),
-						_1: _elm_lang$core$Maybe$Just(_doodledood$elm_split_pane$SplitPane$ResizeEnded)
-					};
-				default:
-					var _p69 = _p63._0;
-					var _p64 = _p70.orientation;
-					if (_p64.ctor === 'Horizontal') {
-						var newModel = A3(
-							_doodledood$elm_split_pane$SplitPane$resize,
-							_p70,
-							_p69,
-							function (_p65) {
-								var _p66 = _p65;
-								return _p66.x;
-							});
-						return {
-							ctor: '_Tuple2',
-							_0: newModel,
-							_1: _elm_lang$core$Maybe$Just(
-								_doodledood$elm_split_pane$SplitPane$Resized(
-									_doodledood$elm_split_pane$SplitPane$splitterPosition(newModel)))
-						};
-					} else {
-						var newModel = A3(
-							_doodledood$elm_split_pane$SplitPane$resize,
-							_p70,
-							_p69,
-							function (_p67) {
-								var _p68 = _p67;
-								return _p68.y;
-							});
-						return {
-							ctor: '_Tuple2',
-							_0: newModel,
-							_1: _elm_lang$core$Maybe$Just(
-								_doodledood$elm_split_pane$SplitPane$Resized(
-									_doodledood$elm_split_pane$SplitPane$splitterPosition(newModel)))
-						};
-					}
-			}
-		}
+	function (msg, model) {
+		var _p36 = A3(
+			_doodledood$elm_split_pane$SplitPane$customUpdate,
+			_doodledood$elm_split_pane$SplitPane$createUpdateConfig(
+				{
+					onResize: function (_p37) {
+						return _elm_lang$core$Maybe$Nothing;
+					},
+					onResizeStarted: _elm_lang$core$Maybe$Nothing,
+					onResizeEnded: _elm_lang$core$Maybe$Nothing
+				}),
+			msg,
+			model);
+		var updatedModel = _p36._0;
+		return updatedModel;
 	});
 var _doodledood$elm_split_pane$SplitPane$CustomSplitter = function (a) {
 	return {ctor: 'CustomSplitter', _0: a};
 };
-var _doodledood$elm_split_pane$SplitPane$customSplitter = F2(
+var _doodledood$elm_split_pane$SplitPane$createCustomSplitter = F2(
 	function (toMsg, details) {
 		return _doodledood$elm_split_pane$SplitPane$CustomSplitter(
 			A2(
@@ -9362,14 +9167,63 @@ var _doodledood$elm_split_pane$SplitPane$customSplitter = F2(
 									details.attributes))))),
 				details.children));
 	});
-var _doodledood$elm_split_pane$SplitPane$view = F4(
-	function (toMsg, firstView, secondView, model) {
-		var defaultSplitter = A2(
-			_doodledood$elm_split_pane$SplitPane$customSplitter,
-			toMsg,
-			_doodledood$elm_split_pane$SplitPane$defaultSplitterDetails(model));
-		return A4(_doodledood$elm_split_pane$SplitPane$viewWithCustomSplitter, defaultSplitter, firstView, secondView, model);
+var _doodledood$elm_split_pane$SplitPane$getConcreteSplitter = F3(
+	function (viewConfig, orientation, draggable) {
+		var _p38 = viewConfig.splitter;
+		if (_p38.ctor === 'Just') {
+			return _p38._0._0;
+		} else {
+			var _p39 = A2(
+				_doodledood$elm_split_pane$SplitPane$createCustomSplitter,
+				viewConfig.toMsg,
+				A2(_doodledood$elm_split_pane$SplitPane$createDefaultSplitterDetails, orientation, draggable));
+			return _p39._0;
+		}
 	});
+var _doodledood$elm_split_pane$SplitPane$view = F4(
+	function (_p41, firstView, secondView, _p40) {
+		var _p42 = _p41;
+		var _p43 = _p40;
+		var _p44 = _p43._0;
+		return A2(
+			_elm_lang$html$Html$div,
+			_elm_lang$core$Native_List.fromArray(
+				[
+					_elm_lang$html$Html_Attributes$class('pane-container'),
+					_doodledood$elm_split_pane$Styles$paneContainerStyle(
+					_elm_lang$core$Native_Utils.eq(_p44.orientation, _doodledood$elm_split_pane$SplitPane$Horizontal))
+				]),
+			_elm_lang$core$Native_List.fromArray(
+				[
+					A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html_Attributes$class('pane-first-view'),
+							_doodledood$elm_split_pane$Styles$childViewStyle(_p44.splitterPosition)
+						]),
+					_elm_lang$core$Native_List.fromArray(
+						[firstView])),
+					A3(_doodledood$elm_split_pane$SplitPane$getConcreteSplitter, _p42._0, _p44.orientation, _p44.draggable),
+					A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html_Attributes$class('pane-second-view'),
+							_doodledood$elm_split_pane$Styles$childViewStyle(1 - _p44.splitterPosition)
+						]),
+					_elm_lang$core$Native_List.fromArray(
+						[secondView]))
+				]));
+	});
+var _doodledood$elm_split_pane$SplitPane$ViewConfig = function (a) {
+	return {ctor: 'ViewConfig', _0: a};
+};
+var _doodledood$elm_split_pane$SplitPane$createViewConfig = function (_p45) {
+	var _p46 = _p45;
+	return _doodledood$elm_split_pane$SplitPane$ViewConfig(
+		{toMsg: _p46.toMsg, splitter: _p46.customSplitter});
+};
 var _doodledood$elm_split_pane$Main$secondView = A2(
 	_elm_lang$html$Html$img,
 	_elm_lang$core$Native_List.fromArray(
@@ -9390,13 +9244,13 @@ var _doodledood$elm_split_pane$Main$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
 		if (_p0.ctor === 'PaneMsg') {
-			var _p1 = A2(_doodledood$elm_split_pane$SplitPane$update, _p0._0, model.pane);
-			var updatedPane = _p1._0;
 			return {
 				ctor: '_Tuple2',
 				_0: _elm_lang$core$Native_Utils.update(
 					model,
-					{pane: updatedPane}),
+					{
+						pane: A2(_doodledood$elm_split_pane$SplitPane$update, _p0._0, model.pane)
+					}),
 				_1: _elm_lang$core$Platform_Cmd$none
 			};
 		} else {
@@ -9414,8 +9268,7 @@ var _doodledood$elm_split_pane$Main$update = F2(
 var _doodledood$elm_split_pane$Main$init = {
 	ctor: '_Tuple2',
 	_0: {
-		pane: _doodledood$elm_split_pane$SplitPane$init(
-			{paneWidth: 800, paneHeight: 600}),
+		pane: _doodledood$elm_split_pane$SplitPane$init(_doodledood$elm_split_pane$SplitPane$Horizontal),
 		message: _elm_lang$core$Maybe$Nothing
 	},
 	_1: _elm_lang$core$Platform_Cmd$none
@@ -9429,7 +9282,7 @@ var _doodledood$elm_split_pane$Main$PaneMsg = function (a) {
 	return {ctor: 'PaneMsg', _0: a};
 };
 var _doodledood$elm_split_pane$Main$myCustomSplitter = A2(
-	_doodledood$elm_split_pane$SplitPane$customSplitter,
+	_doodledood$elm_split_pane$SplitPane$createCustomSplitter,
 	_doodledood$elm_split_pane$Main$PaneMsg,
 	{
 		attributes: _elm_lang$core$Native_List.fromArray(
@@ -9457,6 +9310,11 @@ var _doodledood$elm_split_pane$Main$myCustomSplitter = A2(
 					]))
 			])
 	});
+var _doodledood$elm_split_pane$Main$viewConfig = _doodledood$elm_split_pane$SplitPane$createViewConfig(
+	{
+		toMsg: _doodledood$elm_split_pane$Main$PaneMsg,
+		customSplitter: _elm_lang$core$Maybe$Just(_doodledood$elm_split_pane$Main$myCustomSplitter)
+	});
 var _doodledood$elm_split_pane$Main$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
@@ -9464,7 +9322,21 @@ var _doodledood$elm_split_pane$Main$view = function (model) {
 			[]),
 		_elm_lang$core$Native_List.fromArray(
 			[
-				A4(_doodledood$elm_split_pane$SplitPane$viewWithCustomSplitter, _doodledood$elm_split_pane$Main$myCustomSplitter, _doodledood$elm_split_pane$Main$firstView, _doodledood$elm_split_pane$Main$secondView, model.pane),
+				A2(
+				_elm_lang$html$Html$div,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Attributes$style(
+						_elm_lang$core$Native_List.fromArray(
+							[
+								{ctor: '_Tuple2', _0: 'width', _1: '800px'},
+								{ctor: '_Tuple2', _0: 'height', _1: '600px'}
+							]))
+					]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						A4(_doodledood$elm_split_pane$SplitPane$view, _doodledood$elm_split_pane$Main$viewConfig, _doodledood$elm_split_pane$Main$firstView, _doodledood$elm_split_pane$Main$secondView, model.pane)
+					])),
 				_elm_lang$html$Html$text(
 				A2(_elm_lang$core$Maybe$withDefault, '', model.message))
 			]));
