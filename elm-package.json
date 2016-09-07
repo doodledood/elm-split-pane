@@ -1,5 +1,5 @@
 {
-    "version": "3.0.1",
+    "version": "3.0.2",
     "summary": "Split pane for elm.",
     "repository": "https://github.com/doodledood/elm-split-pane.git",
     "license": "BSD3",
