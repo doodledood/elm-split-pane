@@ -4,9 +4,22 @@ A split pane for Elm.
 
 Embed two views beside each other with a resizable splitter in between.
 
-## Notes
- * Don't forget to register subscriptions for dragging to work.
- * To control the pane's size place the pane inside a container and give the container a size
+## Usage Rules
+
+  - Always put `SplitPane.State` in your model.
+  - Never put _any_ `Config` in your model.
+  - Don't forget to register subscriptions for dragging to work.
+  - To control the pane's size place the pane inside a container and give the container a size
+
+Design inspired by [elm-sortable-table](https://github.com/evancz/elm-sortable-table/).
+
+Read about why these usage rules are good rules [here](https://github.com/evancz/elm-sortable-table/tree/1.0.0#usage-rules).
+
+## Installation
+
+```
+elm package install doodledood/elm-split-pane
+```
 
 ## Examples
 
