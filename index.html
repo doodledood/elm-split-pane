@@ -27,18 +27,49 @@
 <p>Embed two views beside each other with a resizable splitter in between.</p>
 
 <h2>
+<a id="usage-rules" class="anchor" href="#usage-rules" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage Rules</h2>
+
+<ul>
+<li>Always put <code>SplitPane.State</code> in your model.</li>
+<li>Never put <em>any</em> <code>Config</code> in your model.</li>
+<li>Don't forget to register subscriptions for dragging to work.</li>
+<li>To control the pane's size place the pane inside a container and give the container a size</li>
+</ul>
+
+<p>Design inspired by <a href="https://github.com/evancz/elm-sortable-table/">elm-sortable-table</a>.</p>
+
+<p>Read about why these usage rules are good rules <a href="https://github.com/evancz/elm-sortable-table/tree/1.0.0#usage-rules">here</a>.</p>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
+
+<pre><code>elm package install doodledood/elm-split-pane
+</code></pre>
+
+<h2>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h2>
+
+<ol>
+<li><a href="https://doodledood.github.io/elm-split-pane/simple.html">Simple</a></li>
+<li><a href="https://doodledood.github.io/elm-split-pane/nested.html">Nested</a></li>
+<li><a href="https://doodledood.github.io/elm-split-pane/customSplitter.html">Custom splitter</a></li>
+<li><a href="https://doodledood.github.io/elm-split-pane/adjustToResize.html">Adjusting to resizes</a></li>
+</ol>
+
+<p><a href="https://github.com/doodledood/elm-split-pane/tree/master/examples">Examples code</a></p>
+
+<h2>
 <a id="basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic Usage</h2>
 
 <p>Use it just like any other TEA component.</p>
 
-<p><strong>Don't forget to register subscriptions, or dragging on desktop won't work.</strong></p>
-
-<div class="highlight highlight-source-elm"><pre><span class="pl-k">module</span> <span class="pl-c1">Main</span> <span class="pl-k">exposing</span> (..)
+<div class="highlight highlight-source-elm"><pre>
+<span class="pl-k">module</span> <span class="pl-c1">Main</span> <span class="pl-k">exposing</span> (..)
 
 <span class="pl-k">import</span> <span class="pl-c1">Html</span> <span class="pl-k">exposing</span> (..)
 <span class="pl-k">import</span> <span class="pl-c1">Html.App</span> <span class="pl-k">exposing</span> (<span class="pl-en">program</span>)
 <span class="pl-k">import</span> <span class="pl-c1">Html.Attributes</span> <span class="pl-k">exposing</span> (<span class="pl-en">src</span>, <span class="pl-en">style</span>)
-<span class="pl-k">import</span> <span class="pl-c1">SplitPane</span>
+<span class="pl-k">import</span> <span class="pl-c1">SplitPane</span> <span class="pl-k">exposing</span> (<span class="pl-k">Orientation</span><span class="pl-en">(..)</span>, <span class="pl-k">ViewConfig</span>, <span class="pl-en">createViewConfig</span>)
 
 
 <span class="pl-en">main</span> <span class="pl-k">:</span> <span class="pl-k">Program</span> <span class="pl-k">Never</span>
@@ -56,7 +87,7 @@
 
 
 <span class="pl-k">type alias </span><span class="pl-c1">Model</span> <span class="pl-k">=</span>
-    <span class="pl-c1"><span class="pl-c1">{</span></span> pane <span class="pl-k">:</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span><span class="pl-c1">Model</span>
+    <span class="pl-c1"><span class="pl-c1">{</span></span> pane <span class="pl-k">:</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span><span class="pl-c1">State</span>
     <span class="pl-c1"><span class="pl-c1">}</span></span>
 
 
@@ -70,11 +101,7 @@
 
 <span class="pl-en">init</span> <span class="pl-k">:</span> ( <span class="pl-k">Model</span>, <span class="pl-k">Cmd</span> <span class="pl-smi">a</span> )
 <span class="pl-en">init </span><span class="pl-k">=</span>
-    <span class="pl-k">(</span> <span class="pl-c1"><span class="pl-c1">{</span></span> pane <span class="pl-k">=</span>
-            <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>init
-                <span class="pl-c1"><span class="pl-c1">{</span></span> paneWidth <span class="pl-k">=</span> <span class="pl-c1">800</span>
-                <span class="pl-c1"><span class="pl-c1">,</span></span> paneHeight <span class="pl-k">=</span> <span class="pl-c1">600</span>
-                <span class="pl-c1"><span class="pl-c1">}</span></span>
+    <span class="pl-k">(</span> <span class="pl-c1"><span class="pl-c1">{</span></span> pane <span class="pl-k">=</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>init <span class="pl-c1">Horizontal</span>
       <span class="pl-c1"><span class="pl-c1">}</span></span>
     <span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-c1">Cmd</span><span class="pl-k">.</span>none
     <span class="pl-k">)</span>
@@ -88,11 +115,7 @@
 <span class="pl-en">update </span>msg model <span class="pl-k">=</span>
     <span class="pl-k">case </span>msg <span class="pl-k">of</span>
         <span class="pl-c1">PaneMsg</span> paneMsg <span class="pl-k">-&gt;</span>
-            <span class="pl-k">let</span>
-                <span class="pl-k">(</span> updatedPane<span class="pl-c1"><span class="pl-c1">,</span></span> _ <span class="pl-k">)</span> <span class="pl-k">=</span>
-                    <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>update paneMsg model<span class="pl-k">.</span>pane
-            <span class="pl-k">in</span>
-                <span class="pl-k">(</span> <span class="pl-c1"><span class="pl-c1">{</span></span> model <span class="pl-k">|</span> pane <span class="pl-k">=</span> updatedPane <span class="pl-c1"><span class="pl-c1">},</span></span> <span class="pl-c1">Cmd</span><span class="pl-k">.</span>none <span class="pl-k">)</span>
+            <span class="pl-k">(</span> <span class="pl-c1"><span class="pl-c1">{</span></span> model <span class="pl-k">|</span> pane <span class="pl-k">=</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>update paneMsg model<span class="pl-k">.</span>pane <span class="pl-c1"><span class="pl-c1">},</span></span> <span class="pl-c1">Cmd</span><span class="pl-k">.</span>none <span class="pl-k">)</span>
 
 
 
@@ -101,17 +124,31 @@
 
 <span class="pl-en">view</span> <span class="pl-k">:</span> <span class="pl-k">Model</span> <span class="pl-k">-&gt;</span> <span class="pl-k">Html</span> <span class="pl-k">Msg</span>
 <span class="pl-en">view </span>model <span class="pl-k">=</span>
-    <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>view <span class="pl-c1">PaneMsg</span> firstView secondView model<span class="pl-k">.</span>pane
+    div
+        <span class="pl-c1"><span class="pl-c1">[</span></span> style
+            <span class="pl-c1"><span class="pl-c1">[</span></span> <span class="pl-k">(</span> <span class="pl-s"><span class="pl-pds">"</span>width<span class="pl-pds">"</span></span><span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-s"><span class="pl-pds">"</span>800px<span class="pl-pds">"</span></span> <span class="pl-k">)</span>
+            <span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-k">(</span> <span class="pl-s"><span class="pl-pds">"</span>height<span class="pl-pds">"</span></span><span class="pl-c1"><span class="pl-c1">,</span></span> <span class="pl-s"><span class="pl-pds">"</span>600px<span class="pl-pds">"</span></span> <span class="pl-k">)</span>
+            <span class="pl-c1"><span class="pl-c1">]</span></span>
+        <span class="pl-c1"><span class="pl-c1">]</span></span>
+        <span class="pl-c1"><span class="pl-c1">[</span></span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>view viewConfig firstView secondView model<span class="pl-k">.</span>pane <span class="pl-c1"><span class="pl-c1">]</span></span>
+
+
+<span class="pl-en">viewConfig</span> <span class="pl-k">:</span> <span class="pl-k">ViewConfig</span> <span class="pl-k">Msg</span>
+<span class="pl-en">viewConfig </span><span class="pl-k">=</span>
+    createViewConfig
+        <span class="pl-c1"><span class="pl-c1">{</span></span> toMsg <span class="pl-k">=</span> <span class="pl-c1">PaneMsg</span>
+        <span class="pl-c1"><span class="pl-c1">,</span></span> customSplitter <span class="pl-k">=</span> <span class="pl-c1">Nothing</span>
+        <span class="pl-c1"><span class="pl-c1">}</span></span>
 
 
 <span class="pl-en">firstView</span> <span class="pl-k">:</span> <span class="pl-k">Html</span> <span class="pl-smi">a</span>
 <span class="pl-en">firstView </span><span class="pl-k">=</span>
-    text <span class="pl-s"><span class="pl-pds">"</span>first view<span class="pl-pds">"</span></span>
+    img <span class="pl-c1"><span class="pl-c1">[</span></span> src <span class="pl-s"><span class="pl-pds">"</span>http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg<span class="pl-pds">"</span></span> <span class="pl-c1"><span class="pl-c1">]</span></span> <span class="pl-c1"><span class="pl-c1">[]</span></span>
 
 
 <span class="pl-en">secondView</span> <span class="pl-k">:</span> <span class="pl-k">Html</span> <span class="pl-smi">a</span>
 <span class="pl-en">secondView </span><span class="pl-k">=</span>
-    text <span class="pl-s"><span class="pl-pds">"</span>second view<span class="pl-pds">"</span></span>
+    img <span class="pl-c1"><span class="pl-c1">[</span></span> src <span class="pl-s"><span class="pl-pds">"</span>http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg<span class="pl-pds">"</span></span> <span class="pl-c1"><span class="pl-c1">]</span></span> <span class="pl-c1"><span class="pl-c1">[]</span></span>
 
 
 
@@ -122,18 +159,6 @@
 <span class="pl-en">subscriptions </span>model <span class="pl-k">=</span>
     <span class="pl-c1">Sub</span><span class="pl-k">.</span>map <span class="pl-c1">PaneMsg</span> <span class="pl-k">&lt;|</span> <span class="pl-c1">SplitPane</span><span class="pl-k">.</span>subscriptions model<span class="pl-k">.</span>pane
 </pre></div>
-
-<h2>
-<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h2>
-
-<ol>
-<li><a href="https://doodledood.github.io/elm-split-pane/simple.html">Simple</a></li>
-<li><a href="https://doodledood.github.io/elm-split-pane/nested.html">Nested</a></li>
-<li><a href="https://doodledood.github.io/elm-split-pane/customSplitter.html">Custom splitter</a></li>
-<li><a href="https://doodledood.github.io/elm-split-pane/adjustToResize.html">Adjusting to resizes</a></li>
-</ol>
-
-<p><a href="https://github.com/doodledood/elm-split-pane/tree/master/examples">Examples code</a></p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/doodledood/elm-split-pane">Elm Split Pane</a> is maintained by <a href="https://github.com/doodledood">doodledood</a>.</span>
