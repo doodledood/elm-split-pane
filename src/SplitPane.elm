@@ -398,21 +398,6 @@ createViewConfig { toMsg, customSplitter } =
                 , customSplitter = Nothing
                 }
 
-
-        myCustomSplitter : CustomSplitter Msg
-        myCustomSplitter =
-            customSplitter PaneMsg
-                { attributes =
-                    [ style
-                        [ ( "width", "20px" )
-                        , ( "height", "20px" )
-                        ]
-                    ]
-                , children =
-                    []
-                }
-
-
         firstView : Html a
         firstView =
             img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
