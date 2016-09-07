@@ -311,7 +311,7 @@ type alias HtmlDetails msg =
     }
 
 
-{-| Decribes a custom splitter
+{-| Describes a custom splitter
 -}
 type CustomSplitter msg
     = CustomSplitter (Html msg)
@@ -384,7 +384,7 @@ createViewConfig { toMsg, customSplitter } =
         }
 
 
-{-| A pane with custom splitter.
+{-| Creates a view.
 
         view : Model -> Html Msg
         view =
