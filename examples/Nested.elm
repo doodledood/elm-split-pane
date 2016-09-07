@@ -3,7 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig, withResizeLimits)
+import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig, withResizeLimits, withSplitterAt)
 
 
 main : Program Never
@@ -26,8 +26,8 @@ type Msg
 
 
 type alias Model =
-    { outer : SplitPane.Model
-    , inner : SplitPane.Model
+    { outer : SplitPane.State
+    , inner : SplitPane.State
     }
 
 
@@ -42,6 +42,7 @@ init =
             |> withResizeLimits 0.2 0.8
     , inner =
         SplitPane.init Vertical
+            |> withSplitterAt 0.75
     }
         ! []
 
@@ -86,7 +87,7 @@ leftView =
     img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
 
 
-rightView : SplitPane.Model -> Html Msg
+rightView : SplitPane.State -> Html Msg
 rightView =
     SplitPane.view innerViewConfig
         (img [ src "https://pbs.twimg.com/profile_images/378800000532546226/dbe5f0727b69487016ffd67a6689e75a.jpeg" ] [])

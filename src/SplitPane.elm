@@ -6,11 +6,10 @@ module SplitPane
         , createCustomSplitter
         , CustomSplitter
         , HtmlDetails
-        , Model
+        , State
         , Msg
         , Orientation(..)
         , Percentage
-        , draggable
         , subscriptions
         , update
         , customUpdate
@@ -18,6 +17,9 @@ module SplitPane
         , createUpdateConfig
         , init
         , withResizeLimits
+        , withSplitterAt
+        , orientation
+        , draggable
         )
 
 {-|
@@ -28,7 +30,7 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, customUpdate, UpdateConfig, createUpdateConfig, init, withResizeLimits
+@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, State, Msg, Orientation, Percentage, draggable, subscriptions, update, customUpdate, UpdateConfig, createUpdateConfig, init, withResizeLimits, withSplitterAt, draggable, orientation
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -58,8 +60,8 @@ type Orientation
 
 {-| Tracks state of pane.
 -}
-type Model
-    = Model
+type State
+    = State
         { dragPosition : Maybe Position
         , draggable : Bool
         , orientation : Orientation
@@ -86,32 +88,30 @@ type alias Position =
 
 {-| Sets whether the pane is draggable or not
 -}
-draggable : Bool -> Model -> Model
-draggable isDraggable (Model model) =
-    Model { model | draggable = isDraggable }
+draggable : Bool -> State -> State
+draggable isDraggable (State state) =
+    State { state | draggable = isDraggable }
 
 
 {-| Changes orientation of the pane.
 -}
-orientation : Orientation -> Model -> Model
-orientation o (Model model) =
-    Model { model | orientation = o }
+orientation : Orientation -> State -> State
+orientation o (State state) =
+    State { state | orientation = o }
 
 
 {-| Changes the splitter position
 -}
-withSplitterAt : Percentage -> Model -> Model
-withSplitterAt newPosition (Model model) =
-    Model
-        { model | splitterPosition = min 1.0 <| max newPosition 0.0 }
+withSplitterAt : Percentage -> State -> State
+withSplitterAt newPosition (State state) =
+    State { state | splitterPosition = min 1.0 <| max newPosition 0.0 }
 
 
 {-| Changes resizes limits
 -}
-withResizeLimits : Percentage -> Percentage -> Model -> Model
-withResizeLimits minLimit maxLimit (Model model) =
-    Model
-        { model | resizeLimits = ( minLimit, maxLimit ) }
+withResizeLimits : Percentage -> Percentage -> State -> State
+withResizeLimits minLimit maxLimit (State state) =
+    State { state | resizeLimits = ( minLimit, maxLimit ) }
 
 
 
@@ -125,9 +125,9 @@ withResizeLimits minLimit maxLimit (Model model) =
             , paneHeight = 600
             }
 -}
-init : Orientation -> Model
+init : Orientation -> State
 init orientation =
-    Model
+    State
         { dragPosition = Nothing
         , draggable = True
         , orientation = orientation
@@ -189,7 +189,7 @@ createUpdateConfig config =
 
 {-| Updates internal model.
 -}
-update : Msg -> Model -> Model
+update : Msg -> State -> State
 update msg model =
     let
         ( updatedModel, _ ) =
@@ -208,15 +208,15 @@ update msg model =
 
 {-| Updates internal model using custom configuration.
 -}
-customUpdate : UpdateConfig msg -> Msg -> Model -> ( Model, Maybe msg )
-customUpdate (UpdateConfig updateConfig) msg (Model model) =
-    if not model.draggable then
-        ( Model model, Nothing )
+customUpdate : UpdateConfig msg -> Msg -> State -> ( State, Maybe msg )
+customUpdate (UpdateConfig updateConfig) msg (State state) =
+    if not state.draggable then
+        ( State state, Nothing )
     else
         case msg of
             SplitterClick pos ->
-                ( Model
-                    { model
+                ( State
+                    { state
                         | dragPosition = Just <| domInfoToPosition pos
                         , paneWidth = Just pos.parentWidth
                         , paneHeight = Just pos.parentHeight
@@ -225,25 +225,25 @@ customUpdate (UpdateConfig updateConfig) msg (Model model) =
                 )
 
             SplitterLeftAlone _ ->
-                ( Model { model | dragPosition = Nothing }
+                ( State { state | dragPosition = Nothing }
                 , updateConfig.onResizeEnded
                 )
 
             SplitterMove curr ->
-                case model.dragPosition of
+                case state.dragPosition of
                     Nothing ->
-                        ( Model model, Nothing )
+                        ( State state, Nothing )
 
                     Just dragPos ->
                         let
                             ( minLimit, maxLimit ) =
-                                model.resizeLimits
+                                state.resizeLimits
 
                             ( newSplitterPosition, newPosition ) =
-                                resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight minLimit maxLimit
+                                resize state.orientation state.splitterPosition curr dragPos state.paneWidth state.paneHeight minLimit maxLimit
                         in
-                            ( Model
-                                { model
+                            ( State
+                                { state
                                     | dragPosition = Just newPosition
                                     , splitterPosition = newSplitterPosition
                                 }
@@ -399,21 +399,21 @@ createViewConfig { toMsg, customSplitter } =
         secondView =
             img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 -}
-view : ViewConfig msg -> Html msg -> Html msg -> Model -> Html msg
-view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
+view : ViewConfig msg -> Html msg -> Html msg -> State -> Html msg
+view (ViewConfig viewConfig) firstView secondView (State state) =
     div
         [ class "pane-container"
-        , paneContainerStyle <| model.orientation == Horizontal
+        , paneContainerStyle <| state.orientation == Horizontal
         ]
         [ div
             [ class "pane-first-view"
-            , childViewStyle model.splitterPosition
+            , childViewStyle state.splitterPosition
             ]
             [ firstView ]
-        , getConcreteSplitter viewConfig model.orientation model.draggable
+        , getConcreteSplitter viewConfig state.orientation state.draggable
         , div
             [ class "pane-second-view"
-            , childViewStyle <| 1 - model.splitterPosition
+            , childViewStyle <| 1 - state.splitterPosition
             ]
             [ secondView ]
         ]
@@ -495,12 +495,12 @@ domInfo =
 
 {-| Subscribes to relevant events for resizing
 -}
-subscriptions : Model -> Sub Msg
-subscriptions (Model model) =
-    if not model.draggable then
+subscriptions : State -> Sub Msg
+subscriptions (State state) =
+    if not state.draggable then
         Sub.none
     else
-        case model.dragPosition of
+        case state.dragPosition of
             Just _ ->
                 Sub.batch
                     [ Mouse.moves SplitterMove

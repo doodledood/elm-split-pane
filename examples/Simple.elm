@@ -21,7 +21,7 @@ main =
 
 
 type alias Model =
-    { pane : SplitPane.Model
+    { pane : SplitPane.State
     }
 
 
