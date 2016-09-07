@@ -4,19 +4,31 @@ A split pane for Elm.
 
 Embed two views beside each other with a resizable splitter in between.
 
+## Notes
+ * Don't forget to register subscriptions for dragging to work.
+ * To control the pane's size place the pane inside a container and give the container a size
+
+## Examples
+
+1. [Simple](https://doodledood.github.io/elm-split-pane/simple.html)
+2. [Nested](https://doodledood.github.io/elm-split-pane/nested.html)
+3. [Custom splitter](https://doodledood.github.io/elm-split-pane/customSplitter.html)
+4. [Adjusting to resizes](https://doodledood.github.io/elm-split-pane/adjustToResize.html)
+
+[Examples code](https://github.com/doodledood/elm-split-pane/tree/master/examples)
+
 ## Basic Usage
 
 Use it just like any other TEA component.
 
-**Don't forget to register subscriptions, or dragging on desktop won't work.**
-
 ```elm
+
 module Main exposing (..)
 
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane
+import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig)
 
 
 main : Program Never
@@ -34,7 +46,7 @@ main =
 
 
 type alias Model =
-    { pane : SplitPane.Model
+    { pane : SplitPane.State
     }
 
 
@@ -48,11 +60,7 @@ type Msg
 
 init : ( Model, Cmd a )
 init =
-    ( { pane =
-            SplitPane.init
-                { paneWidth = 800
-                , paneHeight = 600
-                }
+    ( { pane = SplitPane.init Horizontal
       }
     , Cmd.none
     )
@@ -66,11 +74,7 @@ update : Msg -> Model -> ( Model, Cmd a )
 update msg model =
     case msg of
         PaneMsg paneMsg ->
-            let
-                ( updatedPane, _ ) =
-                    SplitPane.update paneMsg model.pane
-            in
-                ( { model | pane = updatedPane }, Cmd.none )
+            ( { model | pane = SplitPane.update paneMsg model.pane }, Cmd.none )
 
 
 
@@ -79,17 +83,31 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    SplitPane.view PaneMsg firstView secondView model.pane
+    div
+        [ style
+            [ ( "width", "800px" )
+            , ( "height", "600px" )
+            ]
+        ]
+        [ SplitPane.view viewConfig firstView secondView model.pane ]
+
+
+viewConfig : ViewConfig Msg
+viewConfig =
+    createViewConfig
+        { toMsg = PaneMsg
+        , customSplitter = Nothing
+        }
 
 
 firstView : Html a
 firstView =
-    text "first view"
+    img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
 
 
 secondView : Html a
 secondView =
-    text "second view"
+    img [ src "http://2.bp.blogspot.com/-pATX0YgNSFs/VP-82AQKcuI/AAAAAAAALSU/Vet9e7Qsjjw/s1600/Cat-hd-wallpapers.jpg" ] []
 
 
 
@@ -101,13 +119,3 @@ subscriptions model =
     Sub.map PaneMsg <| SplitPane.subscriptions model.pane
 
 ```
-
-
-## Examples
-
-1. [Simple](https://doodledood.github.io/elm-split-pane/simple.html)
-2. [Nested](https://doodledood.github.io/elm-split-pane/nested.html)
-3. [Custom splitter](https://doodledood.github.io/elm-split-pane/customSplitter.html)
-4. [Adjusting to resizes](https://doodledood.github.io/elm-split-pane/adjustToResize.html)
-
-[Examples code](https://github.com/doodledood/elm-split-pane/tree/master/examples)

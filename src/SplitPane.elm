@@ -30,7 +30,25 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, State, Msg, Orientation, Percentage, draggable, subscriptions, update, customUpdate, UpdateConfig, createUpdateConfig, init, withResizeLimits, withSplitterAt, draggable, orientation
+# View
+
+@docs view, createViewConfig
+
+# Update
+
+@docs update, subscriptions
+
+# State
+
+@docs State, init, withSplitterAt, withResizeLimits, orientation, draggable
+
+# Definitions
+
+@docs Msg, Orientation, Percentage, ViewConfig, UpdateConfig, CustomSplitter, HtmlDetails
+
+# Customization
+
+@docs customUpdate, createUpdateConfig, createCustomSplitter
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -72,7 +90,7 @@ type State
         }
 
 
-{-| Used to track SplitterMoves.
+{-| Internal messages.
 -}
 type Msg
     = SplitterClick DOMInfo
@@ -120,10 +138,7 @@ withResizeLimits minLimit maxLimit (State state) =
 
 {-| Initialize a new model.
 
-        init
-            { paneWidth = 600
-            , paneHeight = 600
-            }
+        init Horizontal
 -}
 init : Orientation -> State
 init orientation =
@@ -356,7 +371,6 @@ type ViewConfig msg
 
 
 {-| Creates a configuration for the view.
-
 -}
 createViewConfig :
     { toMsg : Msg -> msg
@@ -374,7 +388,15 @@ createViewConfig { toMsg, customSplitter } =
 
         view : Model -> Html Msg
         view =
-            SplitPane.viewWithCustomSplitter myCustomSplitter firstView secondView
+            SplitPane.view viewConfig firstView secondView
+
+
+        viewConfig : ViewConfig Msg
+        viewConfig =
+            createViewConfig
+                { toMsg = PaneMsg
+                , customSplitter = Nothing
+                }
 
 
         myCustomSplitter : CustomSplitter Msg
@@ -389,6 +411,7 @@ createViewConfig { toMsg, customSplitter } =
                 , children =
                     []
                 }
+
 
         firstView : Html a
         firstView =
