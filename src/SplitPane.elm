@@ -7,14 +7,13 @@ module SplitPane
         , CustomSplitter
         , HtmlDetails
         , Model
-        , Msg
         , Orientation(..)
         , Percentage
         , draggable
+        , withResizeLimits
+        , withSplitterAt
+        , orientation
         , subscriptions
-        , update
-        , UpdateConfig
-        , createUpdateConfig
         , init
         )
 
@@ -26,7 +25,7 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, UpdateConfig, createUpdateConfig, init
+@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Orientation, Percentage, draggable, withResizeLimits, withSplitterAt, orientation, subscriptions, init
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -66,14 +65,6 @@ type Model
         , paneWidth : Maybe Int
         , paneHeight : Maybe Int
         }
-
-
-{-| Used to track SplitterMoves.
--}
-type Msg
-    = SplitterClick DOMInfo
-    | SplitterMove Position
-    | SplitterLeftAlone Position
 
 
 type alias Position =
@@ -136,113 +127,35 @@ init orientation =
         }
 
 
-
--- UPDATE
-
-
-domInfoToPosition : DOMInfo -> Position
-domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
-    case ( x, y, touchX, touchY ) of
-        ( _, _, Just posX, Just posY ) ->
-            { x = posX, y = posY }
-
-        ( Just posX, Just posY, _, _ ) ->
-            { x = posX, y = posY }
-
-        _ ->
-            { x = 0, y = 0 }
-
-
-{-| Configuration for updates.
--}
-type UpdateConfig msg
-    = UpdateConfig
-        { onResize : Percentage -> Maybe msg
-        , onResizeStarted : Maybe msg
-        , onResizeEnded : Maybe msg
-        }
-
-
-{-| Creates the update configuration.
-    Gives you the option to respond to various things that happen.
-
-    For example:
-    - Draw a different view when the pane is resized:
-
-        updateConfig
-            { onResize (\p -> Just (SwitchViews p))
-            , onResizeStarted Nothing
-            , onResizeEnded Nothing
-            }
--}
-createUpdateConfig :
-    { onResize : Percentage -> Maybe msg
-    , onResizeStarted : Maybe msg
-    , onResizeEnded : Maybe msg
-    }
-    -> UpdateConfig msg
-createUpdateConfig config =
-    UpdateConfig config
-
-
-{-| Updates internal model.
--}
-update : UpdateConfig msg -> Msg -> Model -> ( Model, Maybe msg )
-update (UpdateConfig updateConfig) msg (Model model) =
-    if not model.draggable then
-        ( Model model, Nothing )
-    else
-        case msg of
-            SplitterClick pos ->
-                ( Model
-                    { model
-                        | dragPosition = Just <| domInfoToPosition pos
-                        , paneWidth = Just pos.parentWidth
-                        , paneHeight = Just pos.parentHeight
-                    }
-                , updateConfig.onResizeStarted
-                )
-
-            SplitterLeftAlone _ ->
-                ( Model { model | dragPosition = Nothing }
-                , updateConfig.onResizeEnded
-                )
-
-            SplitterMove curr ->
-                case model.dragPosition of
-                    Nothing ->
-                        ( Model model, Nothing )
-
-                    Just dragPos ->
-                        let
-                            ( minLimit, maxLimit ) =
-                                model.resizeLimits
-
-                            newSplitterPosition =
-                                resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight minLimit maxLimit
-                        in
-                            ( Model
-                                { model
-                                    | dragPosition = Just curr
-                                    , splitterPosition = newSplitterPosition
-                                }
-                            , updateConfig.onResize newSplitterPosition
-                            )
-
-
-resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> Percentage
+resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> ( Bool, Percentage )
 resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight minLimit maxLimit =
     case ( paneWidth, paneHeight ) of
         ( Just width, Just height ) ->
             case orientation of
                 Horizontal ->
-                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
+                    let
+                        newSplitterPosition =
+                            splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
+                    in
+                        checkLimits newSplitterPosition minLimit maxLimit
 
                 Vertical ->
-                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
+                    let
+                        newSplitterPosition =
+                            splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
+                    in
+                        checkLimits newSplitterPosition minLimit maxLimit
 
         ( _, _ ) ->
-            splitterPosition
+            ( False, splitterPosition )
+
+
+checkLimits : Percentage -> Float -> Float -> ( Bool, Percentage )
+checkLimits newSplitterPosition minLimit maxLimit =
+    if newSplitterPosition > maxLimit || newSplitterPosition < minLimit then
+        ( True, min maxLimit <| max minLimit newSplitterPosition )
+    else
+        ( False, newSplitterPosition )
 
 
 
@@ -260,7 +173,7 @@ type alias HtmlDetails msg =
 {-| Decribes a custom splitter
 -}
 type CustomSplitter msg
-    = CustomSplitter (Html msg)
+    = CustomSplitter (Model -> Html msg)
 
 
 createDefaultSplitterDetails : Orientation -> Bool -> HtmlDetails msg
@@ -297,21 +210,30 @@ createDefaultSplitterDetails orientation draggable =
                 }
 -}
 createCustomSplitter :
-    (Msg -> msg)
+    (Model -> msg)
     -> HtmlDetails msg
     -> CustomSplitter msg
 createCustomSplitter toMsg details =
     CustomSplitter <|
-        span
-            (onMouseDown toMsg :: onTouchStart toMsg :: onTouchEnd toMsg :: onTouchMove toMsg :: onTouchCancel toMsg :: details.attributes)
-            details.children
+        \model ->
+            span
+                (onMouseDown toMsg
+                    model
+                    :: onTouchStart toMsg model
+                    :: onMouseUp toMsg model
+                    :: onTouchEnd toMsg model
+                    :: onTouchMove toMsg model
+                    :: onTouchCancel toMsg model
+                    :: details.attributes
+                )
+                details.children
 
 
 {-| Configuration for the view.
 -}
 type ViewConfig msg
     = ViewConfig
-        { toMsg : Msg -> msg
+        { toMsg : Model -> msg
         , splitter : Maybe (CustomSplitter msg)
         }
 
@@ -320,7 +242,7 @@ type ViewConfig msg
 
 -}
 createViewConfig :
-    { toMsg : Msg -> msg
+    { toMsg : Model -> msg
     , customSplitter : Maybe (CustomSplitter msg)
     }
     -> ViewConfig msg
@@ -350,7 +272,6 @@ createViewConfig { toMsg, customSplitter } =
                 , children =
                     []
                 }
-
         firstView : Html a
         firstView =
             img [ src "http://4.bp.blogspot.com/-s3sIvuCfg4o/VP-82RkCOGI/AAAAAAAALSY/509obByLvNw/s1600/baby-cat-wallpaper.jpg" ] []
@@ -364,6 +285,7 @@ view : ViewConfig msg -> Html msg -> Html msg -> Model -> Html msg
 view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
     div
         [ class "pane-container"
+        , onMouseLeave viewConfig.toMsg m
         , paneContainerStyle <| model.orientation == Horizontal
         ]
         [ div
@@ -371,7 +293,7 @@ view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
             , childViewStyle model.splitterPosition
             ]
             [ firstView ]
-        , getConcreteSplitter viewConfig model.orientation model.draggable
+        , getConcreteSplitter viewConfig m
         , div
             [ class "pane-second-view"
             , childViewStyle <| 1 - model.splitterPosition
@@ -381,46 +303,116 @@ view (ViewConfig viewConfig) firstView secondView ((Model model) as m) =
 
 
 getConcreteSplitter :
-    { toMsg : Msg -> msg
+    { toMsg : Model -> msg
     , splitter : Maybe (CustomSplitter msg)
     }
-    -> Orientation
-    -> Bool
+    -> Model
     -> Html msg
-getConcreteSplitter viewConfig orientation draggable =
+getConcreteSplitter viewConfig ((Model model) as m) =
     case viewConfig.splitter of
         Just (CustomSplitter splitter) ->
-            splitter
+            splitter m
 
         Nothing ->
-            case createCustomSplitter viewConfig.toMsg <| createDefaultSplitterDetails orientation draggable of
+            case createCustomSplitter viewConfig.toMsg <| createDefaultSplitterDetails model.orientation model.draggable of
                 CustomSplitter defaultSplitter ->
-                    defaultSplitter
+                    defaultSplitter m
 
 
-onMouseDown : (Msg -> msg) -> Attribute msg
-onMouseDown toMsg =
-    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << SplitterClick) domInfo
+onMouseDown : (Model -> msg) -> Model -> Attribute msg
+onMouseDown toMsg model =
+    onWithOptions "mousedown" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << startDrag model) domInfo
 
 
-onTouchStart : (Msg -> msg) -> Attribute msg
-onTouchStart toMsg =
-    onWithOptions "touchstart" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterClick) domInfo
+onTouchStart : (Model -> msg) -> Model -> Attribute msg
+onTouchStart toMsg model =
+    onWithOptions "touchstart" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << startDrag model) domInfo
 
 
-onTouchEnd : (Msg -> msg) -> Attribute msg
-onTouchEnd toMsg =
-    onWithOptions "touchend" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << domInfoToPosition) domInfo
+startDrag : Model -> DOMInfo -> Model
+startDrag (Model model) domInfo =
+    Model
+        { model
+            | dragPosition = Just <| domInfoToPosition domInfo
+            , paneWidth = Just domInfo.parentWidth
+            , paneHeight = Just domInfo.parentHeight
+        }
 
 
-onTouchCancel : (Msg -> msg) -> Attribute msg
-onTouchCancel toMsg =
-    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterLeftAlone << domInfoToPosition) domInfo
+{-| BUG: This is here because there is a weird behavior regarding move events on a global document.
+         It causes both move and up events to fire together when the mouse is released causing the up event to not register
+         and therefore not stop the resize process.
+         This event handler is the solution meanwhile, as dragin outside the pane is now not allowed....
+
+         See progress on [Github Issue][]
+         [Github Issue]: https://github.com/elm-lang/mouse/issues/2
+-}
+onMouseLeave : (Model -> msg) -> Model -> Attribute msg
+onMouseLeave toMsg model =
+    onWithOptions "mouseleave" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << endDrag model << domInfoToPosition) domInfo
 
 
-onTouchMove : (Msg -> msg) -> Attribute msg
-onTouchMove toMsg =
-    onWithOptions "touchmove" { preventDefault = True, stopPropagation = True } <| Json.map (toMsg << SplitterMove << domInfoToPosition) domInfo
+onMouseUp : (Model -> msg) -> Model -> Attribute msg
+onMouseUp toMsg model =
+    onWithOptions "mouseup" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << endDrag model << domInfoToPosition) domInfo
+
+
+onTouchEnd : (Model -> msg) -> Model -> Attribute msg
+onTouchEnd toMsg model =
+    onWithOptions "touchend" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << endDrag model << domInfoToPosition) domInfo
+
+
+onTouchCancel : (Model -> msg) -> Model -> Attribute msg
+onTouchCancel toMsg model =
+    onWithOptions "touchcancel" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << endDrag model << domInfoToPosition) domInfo
+
+
+endDrag : Model -> Position -> Model
+endDrag (Model model) _ =
+    Model { model | dragPosition = Nothing }
+
+
+onTouchMove : (Model -> msg) -> Model -> Attribute msg
+onTouchMove toMsg model =
+    onWithOptions "touchmove" { preventDefault = True, stopPropagation = False } <| Json.map (toMsg << moveSplitter model << domInfoToPosition) domInfo
+
+
+moveSplitter : Model -> Position -> Model
+moveSplitter (Model model) curr =
+    case model.dragPosition of
+        Nothing ->
+            Model model
+
+        Just dragPos ->
+            let
+                ( minLimit, maxLimit ) =
+                    model.resizeLimits
+
+                ( shouldStopDrag, newSplitterPosition ) =
+                    resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight minLimit maxLimit
+            in
+                Model
+                    { model
+                        | dragPosition =
+                            if shouldStopDrag then
+                                Nothing
+                            else
+                                Just curr
+                        , splitterPosition = newSplitterPosition
+                    }
+
+
+domInfoToPosition : DOMInfo -> Position
+domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
+    case ( x, y, touchX, touchY ) of
+        ( _, _, Just posX, Just posY ) ->
+            { x = posX, y = posY }
+
+        ( Just posX, Just posY, _, _ ) ->
+            { x = posX, y = posY }
+
+        _ ->
+            { x = 0, y = 0 }
 
 
 {-| The position of the touch relative to the whole document. So if you are
@@ -456,16 +448,16 @@ domInfo =
 
 {-| Subscribes to relevant events for resizing
 -}
-subscriptions : Model -> Sub Msg
-subscriptions (Model model) =
+subscriptions : (Model -> msg) -> Model -> Sub msg
+subscriptions toMsg ((Model model) as m) =
     if not model.draggable then
         Sub.none
     else
         case model.dragPosition of
             Just _ ->
                 Sub.batch
-                    [ Mouse.moves SplitterMove
-                    , Mouse.ups SplitterLeftAlone
+                    [ Mouse.ups <| toMsg << endDrag m
+                    , Mouse.moves <| toMsg << moveSplitter m
                     ]
 
             Nothing ->
