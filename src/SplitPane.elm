@@ -16,6 +16,7 @@ module SplitPane
         , UpdateConfig
         , createUpdateConfig
         , init
+        , withResizeLimits
         )
 
 {-|
@@ -26,7 +27,7 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, UpdateConfig, createUpdateConfig, init
+@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, UpdateConfig, createUpdateConfig, init, withResizeLimits
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -218,31 +219,49 @@ update (UpdateConfig updateConfig) msg (Model model) =
                             ( minLimit, maxLimit ) =
                                 model.resizeLimits
 
-                            newSplitterPosition =
+                            ( newSplitterPosition, newPosition ) =
                                 resize model.orientation model.splitterPosition curr dragPos model.paneWidth model.paneHeight minLimit maxLimit
                         in
                             ( Model
                                 { model
-                                    | dragPosition = Just curr
+                                    | dragPosition = Just newPosition
                                     , splitterPosition = newSplitterPosition
                                 }
                             , updateConfig.onResize newSplitterPosition
                             )
 
 
-resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> Percentage
+resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> ( Percentage, Position )
 resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight minLimit maxLimit =
     case ( paneWidth, paneHeight ) of
         ( Just width, Just height ) ->
             case orientation of
                 Horizontal ->
-                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
+                    let
+                        newSplitterPosition =
+                            splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
+                    in
+                        if newSplitterPosition < minLimit then
+                            ( minLimit, { x = round <| toFloat width * minLimit, y = newPosition.y } )
+                        else if newSplitterPosition > maxLimit then
+                            ( maxLimit, { x = round <| toFloat width * maxLimit, y = newPosition.y } )
+                        else
+                            ( newSplitterPosition, newPosition )
 
                 Vertical ->
-                    max minLimit <| min maxLimit <| splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
+                    let
+                        newSplitterPosition =
+                            splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
+                    in
+                        if newSplitterPosition < minLimit then
+                            ( minLimit, { x = newPosition.x, y = round <| toFloat height * minLimit } )
+                        else if newSplitterPosition > maxLimit then
+                            ( maxLimit, { x = newPosition.x, y = round <| toFloat height * maxLimit } )
+                        else
+                            ( newSplitterPosition, newPosition )
 
         ( _, _ ) ->
-            splitterPosition
+            ( splitterPosition, newPosition )
 
 
 
