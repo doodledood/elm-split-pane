@@ -13,6 +13,7 @@ module SplitPane
         , draggable
         , subscriptions
         , update
+        , customUpdate
         , UpdateConfig
         , createUpdateConfig
         , init
@@ -27,7 +28,7 @@ Check out the [examples][] to see how it works.
 
 [examples]: https://github.com/doodledood/elm-split-pane/tree/master/examples
 
-@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, UpdateConfig, createUpdateConfig, init, withResizeLimits
+@docs view, ViewConfig, createViewConfig, createCustomSplitter, CustomSplitter, HtmlDetails, Model, Msg, Orientation, Percentage, draggable, subscriptions, update, customUpdate, UpdateConfig, createUpdateConfig, init, withResizeLimits
 -}
 
 import Html exposing (Html, span, div, Attribute)
@@ -188,8 +189,27 @@ createUpdateConfig config =
 
 {-| Updates internal model.
 -}
-update : UpdateConfig msg -> Msg -> Model -> ( Model, Maybe msg )
-update (UpdateConfig updateConfig) msg (Model model) =
+update : Msg -> Model -> Model
+update msg model =
+    let
+        ( updatedModel, _ ) =
+            customUpdate
+                (createUpdateConfig
+                    { onResize = \_ -> Nothing
+                    , onResizeStarted = Nothing
+                    , onResizeEnded = Nothing
+                    }
+                )
+                msg
+                model
+    in
+        updatedModel
+
+
+{-| Updates internal model using custom configuration.
+-}
+customUpdate : UpdateConfig msg -> Msg -> Model -> ( Model, Maybe msg )
+customUpdate (UpdateConfig updateConfig) msg (Model model) =
     if not model.draggable then
         ( Model model, Nothing )
     else
