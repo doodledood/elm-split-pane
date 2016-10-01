@@ -80,6 +80,22 @@ type Bound
     = Bound Float Float
 
 
+type alias Bounded =
+    { value : Float
+    , bound : Bound
+    }
+
+
+putValue : Bounded -> Float -> Bounded
+putValue { bound } value =
+    Bounded (boundTo bound value) bound
+
+
+putBound : Bounded -> Bound -> Bounded
+putBound { value } bound =
+    putValue (Bounded value bound) value
+
+
 createBound : Float -> Float -> Bound
 createBound a b =
     Bound (min a b) (max a b)
@@ -90,27 +106,29 @@ boundTo (Bound a b) x =
     min b <| max a x
 
 
-zeroToOne : Float -> Float
+zeroToOne : Bound
 zeroToOne =
-    boundTo <| createBound 0.0 1.0
+    createBound 0.0 1.0
 
 
-type alias DragInfo =
-    { dragPosition : Position
-    , paneWidth : Int
+type alias PaneDOMInfo =
+    { paneWidth : Int
     , paneHeight : Int
     }
+
+
+type DragState
+    = Draggable (Maybe PaneDOMInfo)
+    | NotDraggable
 
 
 {-| Tracks state of pane.
 -}
 type State
     = State
-        { draggable : Bool
-        , orientation : Orientation
-        , splitterPosition : Percentage
-        , resizeLimits : Bound
-        , dragInfo : Maybe DragInfo
+        { orientation : Orientation
+        , splitterPosition : Bounded
+        , dragState : DragState
         }
 
 
@@ -132,7 +150,14 @@ type alias Position =
 -}
 draggable : Bool -> State -> State
 draggable isDraggable (State state) =
-    State { state | draggable = isDraggable }
+    State
+        { state
+            | dragState =
+                if isDraggable then
+                    Draggable Nothing
+                else
+                    NotDraggable
+        }
 
 
 {-| Changes orientation of the pane.
@@ -146,14 +171,21 @@ orientation o (State state) =
 -}
 withSplitterAt : Percentage -> State -> State
 withSplitterAt newPosition (State state) =
-    State { state | splitterPosition = zeroToOne newPosition }
+    State
+        { state
+            | splitterPosition = putValue state.splitterPosition newPosition
+        }
 
 
 {-| Changes resizes limits
 -}
 withResizeLimits : Percentage -> Percentage -> State -> State
 withResizeLimits minLimit maxLimit (State state) =
-    State { state | resizeLimits = createBound minLimit maxLimit }
+    State
+        { state
+            | splitterPosition =
+                putBound state.splitterPosition <| createBound minLimit maxLimit
+        }
 
 
 
@@ -167,11 +199,9 @@ withResizeLimits minLimit maxLimit (State state) =
 init : Orientation -> State
 init orientation =
     State
-        { draggable = True
-        , orientation = orientation
-        , splitterPosition = 0.5
-        , resizeLimits = createBound 0.0 1.0
-        , dragInfo = Nothing
+        { orientation = orientation
+        , splitterPosition = Bounded 0.5 zeroToOne
+        , dragState = Draggable Nothing
         }
 
 
@@ -247,80 +277,63 @@ update msg model =
 -}
 customUpdate : UpdateConfig msg -> Msg -> State -> ( State, Maybe msg )
 customUpdate (UpdateConfig updateConfig) msg (State state) =
-    if not state.draggable then
-        ( State state, Nothing )
-    else
-        case msg of
-            SplitterClick pos ->
-                ( State
-                    { state
-                        | dragInfo =
+    case ( state.dragState, msg ) of
+        ( Draggable Nothing, SplitterClick pos ) ->
+            ( State
+                { state
+                    | dragState =
+                        Draggable <|
                             Just
-                                { dragPosition = domInfoToPosition pos
-                                , paneWidth = pos.parentWidth
+                                { paneWidth = pos.parentWidth
                                 , paneHeight = pos.parentHeight
                                 }
+                }
+            , updateConfig.onResizeStarted
+            )
+
+        ( Draggable (Just _), SplitterLeftAlone _ ) ->
+            ( State { state | dragState = Draggable Nothing }
+            , updateConfig.onResizeEnded
+            )
+
+        ( Draggable (Just { paneWidth, paneHeight }), SplitterMove newRequestedPosition ) ->
+            let
+                newSplitterPosition =
+                    resize state.orientation state.splitterPosition newRequestedPosition paneWidth paneHeight
+            in
+                ( State
+                    { state
+                        | splitterPosition = newSplitterPosition
                     }
-                , updateConfig.onResizeStarted
+                , updateConfig.onResize newSplitterPosition.value
                 )
 
-            SplitterLeftAlone _ ->
-                ( State { state | dragInfo = Nothing }
-                , updateConfig.onResizeEnded
-                )
-
-            SplitterMove curr ->
-                case state.dragInfo of
-                    Nothing ->
-                        ( State state, Nothing )
-
-                    Just info ->
-                        let
-                            ( newSplitterPosition, newPosition ) =
-                                resize state.orientation state.splitterPosition curr info.dragPosition info.paneWidth info.paneHeight state.resizeLimits
-                        in
-                            ( State
-                                { state
-                                    | dragInfo =
-                                        Maybe.map
-                                            (\info ->
-                                                { info | dragPosition = newPosition }
-                                            )
-                                            state.dragInfo
-                                    , splitterPosition = newSplitterPosition
-                                }
-                            , updateConfig.onResize newSplitterPosition
-                            )
+        _ ->
+            ( State state, Nothing )
 
 
-resize : Orientation -> Percentage -> Position -> Position -> Int -> Int -> Bound -> ( Percentage, Position )
-resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight resizeLimits =
+resize : Orientation -> Bounded -> Position -> Int -> Int -> Bounded
+resize orientation splitterPosition newPosition paneWidth paneHeight =
     case orientation of
         Horizontal ->
             let
-                newSplitterPosition =
-                    splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat paneWidth
+                prevPositionX =
+                    round <| toFloat paneWidth * splitterPosition.value
 
-                boundedSplitterPosition =
-                    boundTo resizeLimits newSplitterPosition
-
-                newBoundedPosition =
-                    { x = round <| toFloat paneWidth * boundedSplitterPosition, y = newPosition.y }
+                newSplitterValue =
+                    splitterPosition.value + toFloat (newPosition.x - prevPositionX) / toFloat paneWidth
             in
-                ( boundedSplitterPosition, newBoundedPosition )
+                putValue splitterPosition newSplitterValue
 
         Vertical ->
             let
-                newSplitterPosition =
-                    splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat paneHeight
+                prevPositionY =
+                    round <| toFloat paneHeight * splitterPosition.value
 
-                boundedSplitterPosition =
-                    boundTo resizeLimits newSplitterPosition
-
-                newBoundedPosition =
-                    { x = newPosition.x, y = round <| toFloat paneHeight * boundedSplitterPosition }
+                newSplitterValue =
+                    splitterPosition.value + toFloat (newPosition.y - prevPositionY) / toFloat paneHeight
             in
-                ( boundedSplitterPosition, newBoundedPosition )
+                putValue splitterPosition newSplitterValue
 
 
 
@@ -433,22 +446,31 @@ createViewConfig { toMsg, customSplitter } =
 -}
 view : ViewConfig msg -> Html msg -> Html msg -> State -> Html msg
 view (ViewConfig viewConfig) firstView secondView (State state) =
-    div
-        [ class "pane-container"
-        , paneContainerStyle <| state.orientation == Horizontal
-        ]
-        [ div
-            [ class "pane-first-view"
-            , childViewStyle state.splitterPosition
+    let
+        splitter =
+            case state.dragState of
+                Draggable _ ->
+                    getConcreteSplitter viewConfig state.orientation True
+
+                NotDraggable ->
+                    getConcreteSplitter viewConfig state.orientation False
+    in
+        div
+            [ class "pane-container"
+            , paneContainerStyle <| state.orientation == Horizontal
             ]
-            [ firstView ]
-        , getConcreteSplitter viewConfig state.orientation state.draggable
-        , div
-            [ class "pane-second-view"
-            , childViewStyle <| 1 - state.splitterPosition
+            [ div
+                [ class "pane-first-view"
+                , childViewStyle state.splitterPosition.value
+                ]
+                [ firstView ]
+            , splitter
+            , div
+                [ class "pane-second-view"
+                , childViewStyle <| 1 - state.splitterPosition.value
+                ]
+                [ secondView ]
             ]
-            [ secondView ]
-        ]
 
 
 getConcreteSplitter :
@@ -529,15 +551,12 @@ domInfo =
 -}
 subscriptions : State -> Sub Msg
 subscriptions (State state) =
-    if not state.draggable then
-        Sub.none
-    else
-        case state.dragInfo of
-            Just _ ->
-                Sub.batch
-                    [ Mouse.moves SplitterMove
-                    , Mouse.ups SplitterLeftAlone
-                    ]
+    case state.dragState of
+        Draggable _ ->
+            Sub.batch
+                [ Mouse.moves SplitterMove
+                , Mouse.ups SplitterLeftAlone
+                ]
 
-            Nothing ->
-                Sub.none
+        _ ->
+            Sub.none
