@@ -77,11 +77,6 @@ type Orientation
     | Vertical
 
 
-zeroToOne : Bound Float
-zeroToOne =
-    createBound 0.0 1.0
-
-
 type alias PaneDOMInfo =
     { paneWidth : Int
     , paneHeight : Int
@@ -171,7 +166,7 @@ init : Orientation -> State
 init orientation =
     State
         { orientation = orientation
-        , splitterPosition = Bounded 0.5 zeroToOne
+        , splitterPosition = Bounded 0.5 <| createBound 0.0 1.0
         , dragState = Draggable Nothing
         }
 
