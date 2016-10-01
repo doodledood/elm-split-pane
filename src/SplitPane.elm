@@ -76,6 +76,25 @@ type Orientation
     | Vertical
 
 
+type Bound
+    = Bound Float Float
+
+
+createBound : Float -> Float -> Bound
+createBound a b =
+    Bound (min a b) (max a b)
+
+
+boundTo : Bound -> Float -> Float
+boundTo (Bound a b) x =
+    min b <| max a x
+
+
+zeroToOne : Float -> Float
+zeroToOne =
+    boundTo <| createBound 0.0 1.0
+
+
 type alias DragInfo =
     { dragPosition : Position
     , paneWidth : Int
@@ -90,7 +109,7 @@ type State
         { draggable : Bool
         , orientation : Orientation
         , splitterPosition : Percentage
-        , resizeLimits : ( Percentage, Percentage )
+        , resizeLimits : Bound
         , dragInfo : Maybe DragInfo
         }
 
@@ -127,14 +146,14 @@ orientation o (State state) =
 -}
 withSplitterAt : Percentage -> State -> State
 withSplitterAt newPosition (State state) =
-    State { state | splitterPosition = min 1.0 <| max newPosition 0.0 }
+    State { state | splitterPosition = zeroToOne newPosition }
 
 
 {-| Changes resizes limits
 -}
 withResizeLimits : Percentage -> Percentage -> State -> State
 withResizeLimits minLimit maxLimit (State state) =
-    State { state | resizeLimits = ( minLimit, maxLimit ) }
+    State { state | resizeLimits = createBound minLimit maxLimit }
 
 
 
@@ -151,7 +170,7 @@ init orientation =
         { draggable = True
         , orientation = orientation
         , splitterPosition = 0.5
-        , resizeLimits = ( 0.0, 1.0 )
+        , resizeLimits = createBound 0.0 1.0
         , dragInfo = Nothing
         }
 
@@ -257,11 +276,8 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
 
                     Just info ->
                         let
-                            ( minLimit, maxLimit ) =
-                                state.resizeLimits
-
                             ( newSplitterPosition, newPosition ) =
-                                resize state.orientation state.splitterPosition curr info.dragPosition info.paneWidth info.paneHeight minLimit maxLimit
+                                resize state.orientation state.splitterPosition curr info.dragPosition info.paneWidth info.paneHeight state.resizeLimits
                         in
                             ( State
                                 { state
@@ -277,32 +293,34 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
                             )
 
 
-resize : Orientation -> Percentage -> Position -> Position -> Int -> Int -> Percentage -> Percentage -> ( Percentage, Position )
-resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight minLimit maxLimit =
+resize : Orientation -> Percentage -> Position -> Position -> Int -> Int -> Bound -> ( Percentage, Position )
+resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight resizeLimits =
     case orientation of
         Horizontal ->
             let
                 newSplitterPosition =
                     splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat paneWidth
+
+                boundedSplitterPosition =
+                    boundTo resizeLimits newSplitterPosition
+
+                newBoundedPosition =
+                    { x = round <| toFloat paneWidth * boundedSplitterPosition, y = newPosition.y }
             in
-                if newSplitterPosition < minLimit then
-                    ( minLimit, { x = round <| toFloat paneWidth * minLimit, y = newPosition.y } )
-                else if newSplitterPosition > maxLimit then
-                    ( maxLimit, { x = round <| toFloat paneWidth * maxLimit, y = newPosition.y } )
-                else
-                    ( newSplitterPosition, newPosition )
+                ( boundedSplitterPosition, newBoundedPosition )
 
         Vertical ->
             let
                 newSplitterPosition =
                     splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat paneHeight
+
+                boundedSplitterPosition =
+                    boundTo resizeLimits newSplitterPosition
+
+                newBoundedPosition =
+                    { x = newPosition.x, y = round <| toFloat paneHeight * boundedSplitterPosition }
             in
-                if newSplitterPosition < minLimit then
-                    ( minLimit, { x = newPosition.x, y = round <| toFloat paneHeight * minLimit } )
-                else if newSplitterPosition > maxLimit then
-                    ( maxLimit, { x = newPosition.x, y = round <| toFloat paneHeight * maxLimit } )
-                else
-                    ( newSplitterPosition, newPosition )
+                ( boundedSplitterPosition, newBoundedPosition )
 
 
 
