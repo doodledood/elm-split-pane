@@ -76,17 +76,22 @@ type Orientation
     | Vertical
 
 
+type alias DragInfo =
+    { dragPosition : Position
+    , paneWidth : Int
+    , paneHeight : Int
+    }
+
+
 {-| Tracks state of pane.
 -}
 type State
     = State
-        { dragPosition : Maybe Position
-        , draggable : Bool
+        { draggable : Bool
         , orientation : Orientation
         , splitterPosition : Percentage
         , resizeLimits : ( Percentage, Percentage )
-        , paneWidth : Maybe Int
-        , paneHeight : Maybe Int
+        , dragInfo : Maybe DragInfo
         }
 
 
@@ -143,13 +148,11 @@ withResizeLimits minLimit maxLimit (State state) =
 init : Orientation -> State
 init orientation =
     State
-        { dragPosition = Nothing
-        , draggable = True
+        { draggable = True
         , orientation = orientation
         , splitterPosition = 0.5
         , resizeLimits = ( 0.0, 1.0 )
-        , paneWidth = Nothing
-        , paneHeight = Nothing
+        , dragInfo = Nothing
         }
 
 
@@ -232,71 +235,74 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
             SplitterClick pos ->
                 ( State
                     { state
-                        | dragPosition = Just <| domInfoToPosition pos
-                        , paneWidth = Just pos.parentWidth
-                        , paneHeight = Just pos.parentHeight
+                        | dragInfo =
+                            Just
+                                { dragPosition = domInfoToPosition pos
+                                , paneWidth = pos.parentWidth
+                                , paneHeight = pos.parentHeight
+                                }
                     }
                 , updateConfig.onResizeStarted
                 )
 
             SplitterLeftAlone _ ->
-                ( State { state | dragPosition = Nothing }
+                ( State { state | dragInfo = Nothing }
                 , updateConfig.onResizeEnded
                 )
 
             SplitterMove curr ->
-                case state.dragPosition of
+                case state.dragInfo of
                     Nothing ->
                         ( State state, Nothing )
 
-                    Just dragPos ->
+                    Just info ->
                         let
                             ( minLimit, maxLimit ) =
                                 state.resizeLimits
 
                             ( newSplitterPosition, newPosition ) =
-                                resize state.orientation state.splitterPosition curr dragPos state.paneWidth state.paneHeight minLimit maxLimit
+                                resize state.orientation state.splitterPosition curr info.dragPosition info.paneWidth info.paneHeight minLimit maxLimit
                         in
                             ( State
                                 { state
-                                    | dragPosition = Just newPosition
+                                    | dragInfo =
+                                        Maybe.map
+                                            (\info ->
+                                                { info | dragPosition = newPosition }
+                                            )
+                                            state.dragInfo
                                     , splitterPosition = newSplitterPosition
                                 }
                             , updateConfig.onResize newSplitterPosition
                             )
 
 
-resize : Orientation -> Percentage -> Position -> Position -> Maybe Int -> Maybe Int -> Percentage -> Percentage -> ( Percentage, Position )
+resize : Orientation -> Percentage -> Position -> Position -> Int -> Int -> Percentage -> Percentage -> ( Percentage, Position )
 resize orientation splitterPosition newPosition prevPosition paneWidth paneHeight minLimit maxLimit =
-    case ( paneWidth, paneHeight ) of
-        ( Just width, Just height ) ->
-            case orientation of
-                Horizontal ->
-                    let
-                        newSplitterPosition =
-                            splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat width
-                    in
-                        if newSplitterPosition < minLimit then
-                            ( minLimit, { x = round <| toFloat width * minLimit, y = newPosition.y } )
-                        else if newSplitterPosition > maxLimit then
-                            ( maxLimit, { x = round <| toFloat width * maxLimit, y = newPosition.y } )
-                        else
-                            ( newSplitterPosition, newPosition )
+    case orientation of
+        Horizontal ->
+            let
+                newSplitterPosition =
+                    splitterPosition + toFloat (newPosition.x - prevPosition.x) / toFloat paneWidth
+            in
+                if newSplitterPosition < minLimit then
+                    ( minLimit, { x = round <| toFloat paneWidth * minLimit, y = newPosition.y } )
+                else if newSplitterPosition > maxLimit then
+                    ( maxLimit, { x = round <| toFloat paneWidth * maxLimit, y = newPosition.y } )
+                else
+                    ( newSplitterPosition, newPosition )
 
-                Vertical ->
-                    let
-                        newSplitterPosition =
-                            splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat height
-                    in
-                        if newSplitterPosition < minLimit then
-                            ( minLimit, { x = newPosition.x, y = round <| toFloat height * minLimit } )
-                        else if newSplitterPosition > maxLimit then
-                            ( maxLimit, { x = newPosition.x, y = round <| toFloat height * maxLimit } )
-                        else
-                            ( newSplitterPosition, newPosition )
-
-        ( _, _ ) ->
-            ( splitterPosition, newPosition )
+        Vertical ->
+            let
+                newSplitterPosition =
+                    splitterPosition + toFloat (newPosition.y - prevPosition.y) / toFloat paneHeight
+            in
+                if newSplitterPosition < minLimit then
+                    ( minLimit, { x = newPosition.x, y = round <| toFloat paneHeight * minLimit } )
+                else if newSplitterPosition > maxLimit then
+                    ( maxLimit, { x = newPosition.x, y = round <| toFloat paneHeight * maxLimit } )
+                else
+                    ( newSplitterPosition, newPosition )
 
 
 
@@ -508,7 +514,7 @@ subscriptions (State state) =
     if not state.draggable then
         Sub.none
     else
-        case state.dragPosition of
+        case state.dragInfo of
             Just _ ->
                 Sub.batch
                     [ Mouse.moves SplitterMove
