@@ -93,7 +93,7 @@ type DragState
 type State
     = State
         { orientation : Orientation
-        , splitterPosition : Bounded Float
+        , splitterPosition : Bounded Percentage
         , dragState : DragState
         }
 
