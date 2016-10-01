@@ -57,6 +57,7 @@ import Html.Events exposing (onWithOptions)
 import Mouse
 import Json.Decode as Json exposing (Decoder, (:=), at)
 import Maybe
+import Bound exposing (Bound, Bounded, putValue, putBound, createBound)
 import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSplitterStyle, defaultVerticalSplitterStyle)
 
 
@@ -76,37 +77,7 @@ type Orientation
     | Vertical
 
 
-type Bound
-    = Bound Float Float
-
-
-type alias Bounded =
-    { value : Float
-    , bound : Bound
-    }
-
-
-putValue : Bounded -> Float -> Bounded
-putValue { bound } value =
-    Bounded (boundTo bound value) bound
-
-
-putBound : Bounded -> Bound -> Bounded
-putBound { value } bound =
-    putValue (Bounded value bound) value
-
-
-createBound : Float -> Float -> Bound
-createBound a b =
-    Bound (min a b) (max a b)
-
-
-boundTo : Bound -> Float -> Float
-boundTo (Bound a b) x =
-    min b <| max a x
-
-
-zeroToOne : Bound
+zeroToOne : Bound Float
 zeroToOne =
     createBound 0.0 1.0
 
@@ -127,7 +98,7 @@ type DragState
 type State
     = State
         { orientation : Orientation
-        , splitterPosition : Bounded
+        , splitterPosition : Bounded Float
         , dragState : DragState
         }
 
@@ -312,7 +283,7 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
             ( State state, Nothing )
 
 
-resize : Orientation -> Bounded -> Position -> Int -> Int -> Bounded
+resize : Orientation -> Bounded Float -> Position -> Int -> Int -> Bounded Float
 resize orientation splitterPosition newPosition paneWidth paneHeight =
     case orientation of
         Horizontal ->
