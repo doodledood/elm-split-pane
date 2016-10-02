@@ -1,4 +1,4 @@
-module Bound exposing (Bound, Bounded, putValue, putBound, createBound)
+module Bound exposing (Bound, Bounded, putValue, putBound, createBound, createBounded)
 
 
 type alias Bound a =
@@ -6,19 +6,22 @@ type alias Bound a =
 
 
 type alias Bounded a =
-    { value : a
-    , bound : Bound a
-    }
+    ( a, Bound a )
+
+
+createBounded : comparable -> Bound comparable -> Bounded comparable
+createBounded value bound =
+    putValue ( value, bound ) value
 
 
 putValue : Bounded comparable -> comparable -> Bounded comparable
-putValue { bound } value =
-    Bounded (boundTo bound value) bound
+putValue ( _, bound ) value =
+    ( boundTo bound value, bound )
 
 
 putBound : Bounded comparable -> Bound comparable -> Bounded comparable
-putBound { value } bound =
-    putValue (Bounded value bound) value
+putBound ( value, _ ) bound =
+    ( value, bound )
 
 
 createBound : comparable -> comparable -> Bound comparable
@@ -27,5 +30,5 @@ createBound a b =
 
 
 boundTo : Bound comparable -> comparable -> comparable
-boundTo ( a, b ) x =
-    min b <| max a x
+boundTo ( a, b ) =
+    min b << max a

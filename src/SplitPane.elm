@@ -10,6 +10,7 @@ module SplitPane
         , Msg
         , Orientation(..)
         , Percentage
+        , percentage
         , subscriptions
         , update
         , customUpdate
@@ -40,7 +41,7 @@ Check out the [examples][] to see how it works.
 
 # State
 
-@docs State, init, withSplitterAt, withResizeLimits, orientation, draggable
+@docs State, init, withSplitterAt, withResizeLimits, orientation, draggable, percentage
 
 # Definitions
 
@@ -57,7 +58,7 @@ import Html.Events exposing (onWithOptions)
 import Mouse
 import Json.Decode as Json exposing (Decoder, (:=), at)
 import Maybe
-import Bound exposing (Bound, Bounded, putValue, putBound, createBound)
+import Bound exposing (Bound, Bounded, putValue, putBound, createBound, createBounded)
 import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSplitterStyle, defaultVerticalSplitterStyle)
 
 
@@ -67,7 +68,7 @@ import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSpl
 {-| A percentage value between 0.0 and 1.0
 -}
 type alias Percentage =
-    Float
+    Bounded Float
 
 
 {-| Orientation of pane.
@@ -145,17 +146,34 @@ withSplitterAt newPosition (State state) =
 
 {-| Changes resizes limits
 -}
-withResizeLimits : Percentage -> Percentage -> State -> State
-withResizeLimits minLimit maxLimit (State state) =
+withResizeLimits : Bound Percentage -> State -> State
+withResizeLimits newResizeLimit (State state) =
     State
         { state
             | splitterPosition =
-                putBound state.splitterPosition <| createBound minLimit maxLimit
+                putBound state.splitterPosition newResizeLimit
         }
+
+
+{-| Creates a percentage from a float
+-}
+percentage : Float -> Percentage
+percentage x =
+    createBounded x <| createBound 0.0 1.0
+
+
+getPercentage : Bounded Percentage -> Float
+getPercentage =
+    fst << fst
 
 
 
 -- INIT
+
+
+setPercentage : Float -> Bounded Percentage -> Bounded Percentage
+setPercentage x ( p, bound ) =
+    createBounded (putValue p x) bound
 
 
 {-| Initialize a new model.
@@ -166,7 +184,7 @@ init : Orientation -> State
 init orientation =
     State
         { orientation = orientation
-        , splitterPosition = Bounded 0.5 <| createBound 0.0 1.0
+        , splitterPosition = ( percentage 0.5, createBound (percentage 0.0) (percentage 1.0) )
         , dragState = Draggable Nothing
         }
 
@@ -192,7 +210,7 @@ domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
 -}
 type UpdateConfig msg
     = UpdateConfig
-        { onResize : Percentage -> Maybe msg
+        { onResize : Float -> Maybe msg
         , onResizeStarted : Maybe msg
         , onResizeEnded : Maybe msg
         }
@@ -211,7 +229,7 @@ type UpdateConfig msg
             }
 -}
 createUpdateConfig :
-    { onResize : Percentage -> Maybe msg
+    { onResize : Float -> Maybe msg
     , onResizeStarted : Maybe msg
     , onResizeEnded : Maybe msg
     }
@@ -271,35 +289,35 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
                     { state
                         | splitterPosition = newSplitterPosition
                     }
-                , updateConfig.onResize newSplitterPosition.value
+                , updateConfig.onResize <| getPercentage newSplitterPosition
                 )
 
         _ ->
             ( State state, Nothing )
 
 
-resize : Orientation -> Bounded Float -> Position -> Int -> Int -> Bounded Float
+resize : Orientation -> Bounded Percentage -> Position -> Int -> Int -> Bounded Percentage
 resize orientation splitterPosition newPosition paneWidth paneHeight =
     case orientation of
         Horizontal ->
             let
                 prevPositionX =
-                    round <| toFloat paneWidth * splitterPosition.value
+                    round <| toFloat paneWidth * getPercentage splitterPosition
 
                 newSplitterValue =
-                    splitterPosition.value + toFloat (newPosition.x - prevPositionX) / toFloat paneWidth
+                    getPercentage splitterPosition + toFloat (newPosition.x - prevPositionX) / toFloat paneWidth
             in
-                putValue splitterPosition newSplitterValue
+                setPercentage newSplitterValue splitterPosition
 
         Vertical ->
             let
                 prevPositionY =
-                    round <| toFloat paneHeight * splitterPosition.value
+                    round <| toFloat paneHeight * getPercentage splitterPosition
 
                 newSplitterValue =
-                    splitterPosition.value + toFloat (newPosition.y - prevPositionY) / toFloat paneHeight
+                    getPercentage splitterPosition + toFloat (newPosition.y - prevPositionY) / toFloat paneHeight
             in
-                putValue splitterPosition newSplitterValue
+                setPercentage newSplitterValue splitterPosition
 
 
 
@@ -427,13 +445,13 @@ view (ViewConfig viewConfig) firstView secondView (State state) =
             ]
             [ div
                 [ class "pane-first-view"
-                , childViewStyle state.splitterPosition.value
+                , childViewStyle <| getPercentage state.splitterPosition
                 ]
                 [ firstView ]
             , splitter
             , div
                 [ class "pane-second-view"
-                , childViewStyle <| 1 - state.splitterPosition.value
+                , childViewStyle <| 1 - getPercentage state.splitterPosition
                 ]
                 [ secondView ]
             ]

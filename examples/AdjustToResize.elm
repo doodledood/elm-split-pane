@@ -35,7 +35,7 @@ type alias Model =
 
 type Msg
     = PaneMsg SplitPane.Msg
-    | ResizeViews Percentage
+    | ResizeViews Float
 
 
 
@@ -96,7 +96,7 @@ updateConfig =
         }
 
 
-chooseViewSizesBasedOnSplitterPosition : Percentage -> ( ViewSize, ViewSize )
+chooseViewSizesBasedOnSplitterPosition : Float -> ( ViewSize, ViewSize )
 chooseViewSizesBasedOnSplitterPosition splitterPosition =
     if splitterPosition < 0.25 then
         ( Small, Large )

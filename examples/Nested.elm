@@ -3,7 +3,8 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.App exposing (program)
 import Html.Attributes exposing (src, style)
-import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig, withResizeLimits, withSplitterAt)
+import SplitPane exposing (Orientation(..), ViewConfig, createViewConfig, withResizeLimits, withSplitterAt, percentage)
+import Bound exposing (createBound)
 
 
 main : Program Never
@@ -39,10 +40,10 @@ init : ( Model, Cmd a )
 init =
     { outer =
         SplitPane.init Horizontal
-            |> withResizeLimits 0.2 0.8
+            |> withResizeLimits (createBound (percentage 0.2) (percentage 0.8))
     , inner =
         SplitPane.init Vertical
-            |> withSplitterAt 0.75
+            |> withSplitterAt (percentage 0.75)
     }
         ! []
 
