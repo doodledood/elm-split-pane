@@ -523,8 +523,8 @@ domInfo =
         (Json.maybe ("clientY" := Json.int))
         (Json.maybe (at [ "touches", "0", "clientX" ] Json.int))
         (Json.maybe (at [ "touches", "0", "clientY" ] Json.int))
-        (at [ "target", "parentElement", "clientWidth" ] Json.int)
-        (at [ "target", "parentElement", "clientHeight" ] Json.int)
+        (at [ "currentTarget", "parentElement", "clientWidth" ] Json.int)
+        (at [ "currentTarget", "parentElement", "clientHeight" ] Json.int)
 
 
 
