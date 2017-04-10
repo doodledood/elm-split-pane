@@ -2,11 +2,10 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (style)
-import Html.App exposing (program)
 import SplitPane exposing (Orientation(..), Percentage, ViewConfig, UpdateConfig, createViewConfig, createUpdateConfig)
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
     program
         { update = update

@@ -56,7 +56,7 @@ import Html exposing (Html, span, div, Attribute)
 import Html.Attributes exposing (style, class)
 import Html.Events exposing (onWithOptions)
 import Mouse
-import Json.Decode as Json exposing (Decoder, (:=), at)
+import Json.Decode as Json exposing (Decoder, field, at)
 import Maybe
 import Bound exposing (Bound, Bounded, putValue, putBound, createBound, createBounded)
 import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSplitterStyle, defaultVerticalSplitterStyle)
@@ -164,7 +164,7 @@ percentage x =
 
 getPercentage : Bounded Percentage -> Float
 getPercentage =
-    fst << fst
+    Tuple.first << Tuple.first
 
 
 
@@ -518,9 +518,9 @@ type alias DOMInfo =
 -}
 domInfo : Json.Decoder DOMInfo
 domInfo =
-    Json.object6 DOMInfo
-        (Json.maybe ("clientX" := Json.int))
-        (Json.maybe ("clientY" := Json.int))
+    Json.map6 DOMInfo
+        (Json.maybe (field "clientX" Json.int))
+        (Json.maybe (field "clientY" Json.int))
         (Json.maybe (at [ "touches", "0", "clientX" ] Json.int))
         (Json.maybe (at [ "touches", "0", "clientY" ] Json.int))
         (at [ "target", "parentElement", "clientWidth" ] Json.int)
