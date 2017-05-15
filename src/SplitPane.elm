@@ -536,7 +536,7 @@ domInfo =
 subscriptions : State -> Sub Msg
 subscriptions (State state) =
     case state.dragState of
-        Draggable _ ->
+        Draggable (Just _) ->
             Sub.batch
                 [ Mouse.moves SplitterMove
                 , Mouse.ups SplitterLeftAlone
