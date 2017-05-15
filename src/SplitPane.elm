@@ -360,7 +360,7 @@ createDefaultSplitterDetails orientation draggable =
 
         myCustomSplitter : CustomSplitter Msg
         myCustomSplitter =
-            customSplitter PaneMsg
+            createCustomSplitter PaneMsg
                 { attributes =
                     [ style
                         [ ( "width", "20px" )
