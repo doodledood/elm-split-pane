@@ -79,13 +79,17 @@ type Orientation
 
 
 type alias PaneDOMInfo =
-    { paneWidth : Int
-    , paneHeight : Int
+    { width : Int
+    , height : Int
     }
 
+type alias DragInfo =
+    { paneInfo : PaneDOMInfo
+    , anchor : Position
+    }
 
 type DragState
-    = Draggable (Maybe PaneDOMInfo)
+    = Draggable (Maybe DragInfo)
     | NotDraggable
 
 
@@ -268,8 +272,14 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
                     | dragState =
                         Draggable <|
                             Just
-                                { paneWidth = pos.parentWidth
-                                , paneHeight = pos.parentHeight
+                                { paneInfo = 
+                                    { width = pos.parentWidth
+                                    , height = pos.parentHeight
+                                    }
+                                , anchor = 
+                                    { x = Maybe.withDefault 0 pos.x
+                                    , y = Maybe.withDefault 0 pos.y
+                                    }
                                 }
                 }
             , updateConfig.onResizeStarted
@@ -280,14 +290,29 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
             , updateConfig.onResizeEnded
             )
 
-        ( Draggable (Just { paneWidth, paneHeight }), SplitterMove newRequestedPosition ) ->
+        ( Draggable (Just { paneInfo, anchor }), SplitterMove newRequestedPosition ) ->
             let
+                step = 
+                    { x = newRequestedPosition.x - anchor.x
+                    , y = newRequestedPosition.y - anchor.y
+                    }
                 newSplitterPosition =
-                    resize state.orientation state.splitterPosition newRequestedPosition paneWidth paneHeight
+                    resize state.orientation state.splitterPosition step paneInfo.width paneInfo.height
             in
                 ( State
                     { state
                         | splitterPosition = newSplitterPosition
+                        , dragState = Draggable <|
+                            Just
+                                { paneInfo = 
+                                    { width = paneInfo.width
+                                    , height = paneInfo.height
+                                    }
+                                , anchor = 
+                                    { x = newRequestedPosition.x
+                                    , y = newRequestedPosition.y
+                                    }
+                                }
                     }
                 , updateConfig.onResize <| getPercentage newSplitterPosition
                 )
@@ -297,25 +322,19 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
 
 
 resize : Orientation -> Bounded Percentage -> Position -> Int -> Int -> Bounded Percentage
-resize orientation splitterPosition newPosition paneWidth paneHeight =
+resize orientation splitterPosition step paneWidth paneHeight =
     case orientation of
         Horizontal ->
             let
-                prevPositionX =
-                    round <| toFloat paneWidth * getPercentage splitterPosition
-
                 newSplitterValue =
-                    getPercentage splitterPosition + toFloat (newPosition.x - prevPositionX) / toFloat paneWidth
+                    getPercentage splitterPosition +  toFloat step.x / toFloat paneWidth
             in
                 setPercentage newSplitterValue splitterPosition
 
         Vertical ->
             let
-                prevPositionY =
-                    round <| toFloat paneHeight * getPercentage splitterPosition
-
                 newSplitterValue =
-                    getPercentage splitterPosition + toFloat (newPosition.y - prevPositionY) / toFloat paneHeight
+                    getPercentage splitterPosition + toFloat step.y / toFloat paneHeight
             in
                 setPercentage newSplitterValue splitterPosition
 
