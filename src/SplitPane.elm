@@ -533,7 +533,7 @@ type alias DOMInfo =
     }
 
 
-{-| The decoder used to extract a `Position` from a JavaScript touch event.
+{-| The decoder used to extract a `DOMInfo` from a JavaScript touch event.
 -}
 domInfo : Json.Decoder DOMInfo
 domInfo =
