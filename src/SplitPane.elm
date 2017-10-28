@@ -83,10 +83,12 @@ type alias PaneDOMInfo =
     , height : Int
     }
 
+
 type alias DragInfo =
     { paneInfo : PaneDOMInfo
     , anchor : Position
     }
+
 
 type DragState
     = Draggable (Maybe DragInfo)
@@ -272,11 +274,11 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
                     | dragState =
                         Draggable <|
                             Just
-                                { paneInfo = 
+                                { paneInfo =
                                     { width = pos.parentWidth
                                     , height = pos.parentHeight
                                     }
-                                , anchor = 
+                                , anchor =
                                     { x = Maybe.withDefault 0 pos.x
                                     , y = Maybe.withDefault 0 pos.y
                                     }
@@ -292,27 +294,29 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
 
         ( Draggable (Just { paneInfo, anchor }), SplitterMove newRequestedPosition ) ->
             let
-                step = 
+                step =
                     { x = newRequestedPosition.x - anchor.x
                     , y = newRequestedPosition.y - anchor.y
                     }
+
                 newSplitterPosition =
                     resize state.orientation state.splitterPosition step paneInfo.width paneInfo.height
             in
                 ( State
                     { state
                         | splitterPosition = newSplitterPosition
-                        , dragState = Draggable <|
-                            Just
-                                { paneInfo = 
-                                    { width = paneInfo.width
-                                    , height = paneInfo.height
+                        , dragState =
+                            Draggable <|
+                                Just
+                                    { paneInfo =
+                                        { width = paneInfo.width
+                                        , height = paneInfo.height
+                                        }
+                                    , anchor =
+                                        { x = newRequestedPosition.x
+                                        , y = newRequestedPosition.y
+                                        }
                                     }
-                                , anchor = 
-                                    { x = newRequestedPosition.x
-                                    , y = newRequestedPosition.y
-                                    }
-                                }
                     }
                 , updateConfig.onResize <| getPercentage newSplitterPosition
                 )
@@ -327,7 +331,7 @@ resize orientation splitterPosition step paneWidth paneHeight =
         Horizontal ->
             let
                 newSplitterValue =
-                    getPercentage splitterPosition +  toFloat step.x / toFloat paneWidth
+                    getPercentage splitterPosition + toFloat step.x / toFloat paneWidth
             in
                 setPercentage newSplitterValue splitterPosition
 
