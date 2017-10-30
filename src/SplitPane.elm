@@ -9,18 +9,18 @@ module SplitPane
         , State
         , Msg
         , Orientation(..)
-        , Percentage
-        , percentage
+        , SizeUnit(..)
         , subscriptions
         , update
         , customUpdate
         , UpdateConfig
         , createUpdateConfig
         , init
-        , withResizeLimits
-        , withSplitterAt
+        , configureSplitter
         , orientation
         , draggable
+        , percentage
+        , px
         )
 
 {-|
@@ -41,11 +41,15 @@ Check out the [examples][] to see how it works.
 
 # State
 
-@docs State, init, withSplitterAt, withResizeLimits, orientation, draggable, percentage
+@docs State, init, configureSplitter, orientation, draggable
+
+# Helpers
+
+@docs percentage, px
 
 # Definitions
 
-@docs Msg, Orientation, Percentage, ViewConfig, UpdateConfig, CustomSplitter, HtmlDetails
+@docs Msg, Orientation, SizeUnit, ViewConfig, UpdateConfig, CustomSplitter, HtmlDetails
 
 # Customization
 
@@ -53,22 +57,29 @@ Check out the [examples][] to see how it works.
 -}
 
 import Html exposing (Html, span, div, Attribute)
-import Html.Attributes exposing (style, class)
+import Html.Attributes exposing (class, style)
 import Html.Events exposing (onWithOptions)
 import Mouse
-import Json.Decode as Json exposing (Decoder, field, at)
+import Json.Decode as Json exposing (field, at)
 import Maybe
-import Bound exposing (Bound, Bounded, putValue, putBound, createBound, createBounded)
-import Styles exposing (paneContainerStyle, childViewStyle, defaultHorizontalSplitterStyle, defaultVerticalSplitterStyle)
+import Bound
+    exposing
+        ( Bounded
+        , getValue
+        , updateValue
+        , createBound
+        , createBounded
+        )
 
 
 -- MODEL
 
 
-{-| A percentage value between 0.0 and 1.0
+{-| Size unit for setting slider - either percentage value between 0.0 and 1.0 or pixel value (> 0)
 -}
-type alias Percentage =
-    Bounded Float
+type SizeUnit
+    = Percentage (Bounded Float)
+    | Px (Bounded Int)
 
 
 {-| Orientation of pane.
@@ -78,18 +89,24 @@ type Orientation
     | Vertical
 
 
+{-| Keeps dimensions of pane.
+-}
 type alias PaneDOMInfo =
     { width : Int
     , height : Int
     }
 
 
+{-| Keep relevant information for the drag operations.
+-}
 type alias DragInfo =
     { paneInfo : PaneDOMInfo
     , anchor : Position
     }
 
 
+{-| Drag state information.
+-}
 type DragState
     = Draggable (Maybe DragInfo)
     | NotDraggable
@@ -100,7 +117,7 @@ type DragState
 type State
     = State
         { orientation : Orientation
-        , splitterPosition : Bounded Percentage
+        , splitterPosition : SizeUnit
         , dragState : DragState
         }
 
@@ -113,6 +130,8 @@ type Msg
     | SplitterLeftAlone Position
 
 
+{-| Describes a mouse/touch position
+-}
 type alias Position =
     { x : Int
     , y : Int
@@ -140,46 +159,50 @@ orientation o (State state) =
     State { state | orientation = o }
 
 
-{-| Changes the splitter position
+{-| Change the splitter position and limit
 -}
-withSplitterAt : Percentage -> State -> State
-withSplitterAt newPosition (State state) =
+configureSplitter : SizeUnit -> State -> State
+configureSplitter newPosition (State state) =
     State
         { state
-            | splitterPosition = putValue state.splitterPosition newPosition
+            | splitterPosition = newPosition
         }
 
 
-{-| Changes resizes limits
+{-| Creates a percentage size unit from a float
 -}
-withResizeLimits : Bound Percentage -> State -> State
-withResizeLimits newResizeLimit (State state) =
-    State
-        { state
-            | splitterPosition =
-                putBound state.splitterPosition newResizeLimit
-        }
+percentage : Float -> Maybe ( Float, Float ) -> SizeUnit
+percentage x bound =
+    let
+        newBound =
+            case bound of
+                Just ( lower, upper ) ->
+                    createBound lower upper
+
+                Nothing ->
+                    createBound 0.0 1.0
+    in
+        Percentage <| createBounded x newBound
 
 
-{-| Creates a percentage from a float
+{-| Creates a pixel size unit from an int
 -}
-percentage : Float -> Percentage
-percentage x =
-    createBounded x <| createBound 0.0 1.0
+px : Int -> Maybe ( Int, Int ) -> SizeUnit
+px x bound =
+    let
+        newBound =
+            case bound of
+                Just ( lower, upper ) ->
+                    createBound lower upper
 
-
-getPercentage : Bounded Percentage -> Float
-getPercentage =
-    Tuple.first << Tuple.first
+                Nothing ->
+                    createBound 0 9999999999
+    in
+        Px <| createBounded x newBound
 
 
 
 -- INIT
-
-
-setPercentage : Float -> Bounded Percentage -> Bounded Percentage
-setPercentage x ( p, bound ) =
-    createBounded (putValue p x) bound
 
 
 {-| Initialize a new model.
@@ -190,7 +213,7 @@ init : Orientation -> State
 init orientation =
     State
         { orientation = orientation
-        , splitterPosition = ( percentage 0.5, createBound (percentage 0.0) (percentage 1.0) )
+        , splitterPosition = percentage 0.5 Nothing
         , dragState = Draggable Nothing
         }
 
@@ -200,7 +223,7 @@ init orientation =
 
 
 domInfoToPosition : DOMInfo -> Position
-domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
+domInfoToPosition { x, y, touchX, touchY } =
     case ( x, y, touchX, touchY ) of
         ( _, _, Just posX, Just posY ) ->
             { x = posX, y = posY }
@@ -216,7 +239,7 @@ domInfoToPosition { x, y, touchX, touchY, parentWidth, parentHeight } =
 -}
 type UpdateConfig msg
     = UpdateConfig
-        { onResize : Float -> Maybe msg
+        { onResize : SizeUnit -> Maybe msg
         , onResizeStarted : Maybe msg
         , onResizeEnded : Maybe msg
         }
@@ -235,7 +258,7 @@ type UpdateConfig msg
             }
 -}
 createUpdateConfig :
-    { onResize : Float -> Maybe msg
+    { onResize : SizeUnit -> Maybe msg
     , onResizeStarted : Maybe msg
     , onResizeEnded : Maybe msg
     }
@@ -318,29 +341,31 @@ customUpdate (UpdateConfig updateConfig) msg (State state) =
                                         }
                                     }
                     }
-                , updateConfig.onResize <| getPercentage newSplitterPosition
+                , updateConfig.onResize newSplitterPosition
                 )
 
         _ ->
             ( State state, Nothing )
 
 
-resize : Orientation -> Bounded Percentage -> Position -> Int -> Int -> Bounded Percentage
+resize : Orientation -> SizeUnit -> Position -> Int -> Int -> SizeUnit
 resize orientation splitterPosition step paneWidth paneHeight =
     case orientation of
         Horizontal ->
-            let
-                newSplitterValue =
-                    getPercentage splitterPosition + toFloat step.x / toFloat paneWidth
-            in
-                setPercentage newSplitterValue splitterPosition
+            case splitterPosition of
+                Px px ->
+                    Px <| updateValue (\v -> v + step.x) px
+
+                Percentage p ->
+                    Percentage <| updateValue (\v -> v + toFloat step.x / toFloat paneWidth) p
 
         Vertical ->
-            let
-                newSplitterValue =
-                    getPercentage splitterPosition + toFloat step.y / toFloat paneHeight
-            in
-                setPercentage newSplitterValue splitterPosition
+            case splitterPosition of
+                Px px ->
+                    Px <| updateValue (\v -> v + step.y) px
+
+                Percentage p ->
+                    Percentage <| updateValue (\v -> v + toFloat step.y / toFloat paneHeight) p
 
 
 
@@ -361,19 +386,19 @@ type CustomSplitter msg
     = CustomSplitter (Html msg)
 
 
-createDefaultSplitterDetails : Orientation -> Bool -> HtmlDetails msg
-createDefaultSplitterDetails orientation draggable =
+createDefaultSplitterDetails : Orientation -> DragState -> HtmlDetails msg
+createDefaultSplitterDetails orientation dragState =
     case orientation of
         Horizontal ->
             { attributes =
-                [ defaultHorizontalSplitterStyle draggable
+                [ defaultHorizontalSplitterStyle dragState
                 ]
             , children = []
             }
 
         Vertical ->
             { attributes =
-                [ defaultVerticalSplitterStyle draggable
+                [ defaultVerticalSplitterStyle dragState
                 ]
             , children = []
             }
@@ -455,26 +480,21 @@ view : ViewConfig msg -> Html msg -> Html msg -> State -> Html msg
 view (ViewConfig viewConfig) firstView secondView (State state) =
     let
         splitter =
-            case state.dragState of
-                Draggable _ ->
-                    getConcreteSplitter viewConfig state.orientation True
-
-                NotDraggable ->
-                    getConcreteSplitter viewConfig state.orientation False
+            getConcreteSplitter viewConfig state.orientation state.dragState
     in
         div
             [ class "pane-container"
-            , paneContainerStyle <| state.orientation == Horizontal
+            , paneContainerStyle state.orientation
             ]
             [ div
                 [ class "pane-first-view"
-                , childViewStyle <| getPercentage state.splitterPosition
+                , firstChildViewStyle (State state)
                 ]
                 [ firstView ]
             , splitter
             , div
                 [ class "pane-second-view"
-                , childViewStyle <| 1 - getPercentage state.splitterPosition
+                , secondChildViewStyle (State state)
                 ]
                 [ secondView ]
             ]
@@ -485,17 +505,173 @@ getConcreteSplitter :
     , splitter : Maybe (CustomSplitter msg)
     }
     -> Orientation
-    -> Bool
+    -> DragState
     -> Html msg
-getConcreteSplitter viewConfig orientation draggable =
+getConcreteSplitter viewConfig orientation dragState =
     case viewConfig.splitter of
         Just (CustomSplitter splitter) ->
             splitter
 
         Nothing ->
-            case createCustomSplitter viewConfig.toMsg <| createDefaultSplitterDetails orientation draggable of
+            case createCustomSplitter viewConfig.toMsg <| createDefaultSplitterDetails orientation dragState of
                 CustomSplitter defaultSplitter ->
                     defaultSplitter
+
+
+
+-- STYLES
+
+
+paneContainerStyle : Orientation -> Attribute a
+paneContainerStyle orientation =
+    style
+        [ ( "overflow", "hidden" )
+        , ( "display", "flex" )
+        , ( "flexDirection"
+          , case orientation of
+                Horizontal ->
+                    "row"
+
+                Vertical ->
+                    "column"
+          )
+        , ( "justifyContent", "center" )
+        , ( "alignItems", "center" )
+        , ( "width", "100%" )
+        , ( "height", "100%" )
+        , ( "boxSizing", "border-box" )
+        ]
+
+
+firstChildViewStyle : State -> Attribute a
+firstChildViewStyle (State state) =
+    case state.splitterPosition of
+        Px px ->
+            let
+                v =
+                    (toString <| toFloat (getValue px)) ++ "px"
+            in
+                case state.orientation of
+                    Horizontal ->
+                        style
+                            [ ( "display", "flex" )
+                            , ( "width", v )
+                            , ( "height", "100%" )
+                            , ( "overflow", "hidden" )
+                            , ( "boxSizing", "border-box" )
+                            , ( "position", "relative" )
+                            ]
+
+                    Vertical ->
+                        style
+                            [ ( "display", "flex" )
+                            , ( "width", "100%" )
+                            , ( "height", v )
+                            , ( "overflow", "hidden" )
+                            , ( "boxSizing", "border-box" )
+                            , ( "position", "relative" )
+                            ]
+
+        Percentage p ->
+            let
+                v =
+                    toString <| getValue p
+            in
+                style
+                    [ ( "display", "flex" )
+                    , ( "flex", v )
+                    , ( "width", "100%" )
+                    , ( "height", "100%" )
+                    , ( "overflow", "hidden" )
+                    , ( "boxSizing", "border-box" )
+                    , ( "position", "relative" )
+                    ]
+
+
+secondChildViewStyle : State -> Attribute a
+secondChildViewStyle (State state) =
+    case state.splitterPosition of
+        Px _ ->
+            style
+                [ ( "display", "flex" )
+                , ( "flex", "1" )
+                , ( "width", "100%" )
+                , ( "height", "100%" )
+                , ( "overflow", "hidden" )
+                , ( "boxSizing", "border-box" )
+                , ( "position", "relative" )
+                ]
+
+        Percentage p ->
+            let
+                v =
+                    toString <| 1 - getValue p
+            in
+                style
+                    [ ( "display", "flex" )
+                    , ( "flex", v )
+                    , ( "width", "100%" )
+                    , ( "height", "100%" )
+                    , ( "overflow", "hidden" )
+                    , ( "boxSizing", "border-box" )
+                    , ( "position", "relative" )
+                    ]
+
+
+defaultVerticalSplitterStyle : DragState -> Attribute a
+defaultVerticalSplitterStyle dragState =
+    style
+        (baseDefaultSplitterStyles
+            ++ [ ( "height", "11px" )
+               , ( "width", "100%" )
+               , ( "margin", "-5px 0" )
+               , ( "borderTop", "5px solid rgba(255, 255, 255, 0)" )
+               , ( "borderBottom", "5px solid rgba(255, 255, 255, 0)" )
+               ]
+            ++ case dragState of
+                Draggable _ ->
+                    [ ( "cursor", "row-resize" ) ]
+
+                NotDraggable ->
+                    []
+        )
+
+
+defaultHorizontalSplitterStyle : DragState -> Attribute a
+defaultHorizontalSplitterStyle dragState =
+    style
+        (baseDefaultSplitterStyles
+            ++ [ ( "width", "11px" )
+               , ( "height", "100%" )
+               , ( "margin", "0 -5px" )
+               , ( "borderLeft", "5px solid rgba(255, 255, 255, 0)" )
+               , ( "borderRight", "5px solid rgba(255, 255, 255, 0)" )
+               ]
+            ++ case dragState of
+                Draggable _ ->
+                    [ ( "cursor", "col-resize" ) ]
+
+                NotDraggable ->
+                    []
+        )
+
+
+baseDefaultSplitterStyles : List ( String, String )
+baseDefaultSplitterStyles =
+    [ ( "width", "100%" )
+    , ( "background", "#000" )
+    , ( "boxSizing", "border-box" )
+    , ( "opacity", ".2" )
+    , ( "zIndex", "1" )
+    , ( "webkitUserSelect", "none" )
+    , ( "mozUserSelect", "none" )
+    , ( "userSelect", "none" )
+    , ( "backgroundClip", "padding-box" )
+    ]
+
+
+
+-- EVENT HANDLERS
 
 
 onMouseDown : (Msg -> msg) -> Attribute msg
