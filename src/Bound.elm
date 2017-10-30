@@ -1,10 +1,20 @@
-module Bound exposing (Bound, Bounded, putValue, putBound, createBound, createBounded)
+module Bound
+    exposing
+        ( Bound
+        , Bounded
+        , putValue
+        , getValue
+        , updateValue
+        , putBound
+        , createBound
+        , createBounded
+        )
 
 {-|
 
 This module defines a value that is between two other values.
 
-@docs Bound, Bounded, putValue, putBound, createBound, createBounded
+@docs Bound, Bounded, getValue, putValue, updateValue, putBound, createBound, createBounded
 
 -}
 
@@ -23,6 +33,13 @@ type alias Bounded a =
 
 {-| Create a new bounded value.
 -}
+getValue : Bounded comparable -> comparable
+getValue value =
+    Tuple.first value
+
+
+{-| Create a new bounded value.
+-}
 createBounded : comparable -> Bound comparable -> Bounded comparable
 createBounded value bound =
     putValue ( value, bound ) value
@@ -33,6 +50,13 @@ createBounded value bound =
 putValue : Bounded comparable -> comparable -> Bounded comparable
 putValue ( _, bound ) value =
     ( boundTo bound value, bound )
+
+
+{-| Update the value that is bounded.
+-}
+updateValue : (comparable -> comparable) -> Bounded comparable -> Bounded comparable
+updateValue f ( value, bound ) =
+    ( boundTo bound (f value), bound )
 
 
 {-| Change the bound of the bounded value.
