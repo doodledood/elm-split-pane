@@ -2,7 +2,15 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (style)
-import SplitPane exposing (Orientation(..), Percentage, ViewConfig, UpdateConfig, createViewConfig, createUpdateConfig)
+import SplitPane
+    exposing
+        ( Orientation(..)
+        , SizeUnit(..)
+        , ViewConfig
+        , UpdateConfig
+        , createViewConfig
+        , createUpdateConfig
+        )
 
 
 main : Program Never Model Msg
@@ -34,7 +42,7 @@ type alias Model =
 
 type Msg
     = PaneMsg SplitPane.Msg
-    | ResizeViews Float
+    | ResizeViews SizeUnit
 
 
 
@@ -89,20 +97,30 @@ update msg model =
 updateConfig : UpdateConfig Msg
 updateConfig =
     createUpdateConfig
-        { onResize = \p -> Just (ResizeViews p)
+        { onResize = \s -> Just (ResizeViews s)
         , onResizeStarted = Nothing
         , onResizeEnded = Nothing
         }
 
 
-chooseViewSizesBasedOnSplitterPosition : Float -> ( ViewSize, ViewSize )
+chooseViewSizesBasedOnSplitterPosition : SizeUnit -> ( ViewSize, ViewSize )
 chooseViewSizesBasedOnSplitterPosition splitterPosition =
-    if splitterPosition < 0.25 then
-        ( Small, Large )
-    else if splitterPosition < 0.75 then
-        ( Medium, Medium )
-    else
-        ( Large, Small )
+    case splitterPosition of
+        Px ( p, _ ) ->
+            if p < 200 then
+                ( Small, Large )
+            else if p < 600 then
+                ( Medium, Medium )
+            else
+                ( Large, Small )
+
+        Percentage ( p, _ ) ->
+            if p < 0.25 then
+                ( Small, Large )
+            else if p < 0.75 then
+                ( Medium, Medium )
+            else
+                ( Large, Small )
 
 
 

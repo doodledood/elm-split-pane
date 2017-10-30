@@ -4,7 +4,14 @@ import Html exposing (..)
 import Html.Attributes exposing (src, style)
 import Html.Events exposing (onClick)
 import Maybe
-import SplitPane exposing (Orientation(..), CustomSplitter, createCustomSplitter, ViewConfig, createViewConfig)
+import SplitPane
+    exposing
+        ( Orientation(..)
+        , CustomSplitter
+        , createCustomSplitter
+        , ViewConfig
+        , createViewConfig
+        )
 
 
 main : Program Never Model Msg
