@@ -32,8 +32,6 @@ elm package install doodledood/elm-split-pane
 
 ## Basic Usage
 
-Use it just like any other TEA component.
-
 ```elm
 
 module Main exposing (..)
